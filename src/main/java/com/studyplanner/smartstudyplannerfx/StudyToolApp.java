@@ -222,14 +222,25 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
        // syllabusBtn.setOnAction(e -> root.setCenter(tree.getTreeView()));
        
        
-        revisionBtn.setOnAction(e -> {
+       revisionBtn.setOnAction(e -> {
+    try {
+        planner.loadPerformance(currentStudent.getId());
+        
+        // Pass a callback that refreshes the view
+        Runnable refreshView = () -> {
             try {
                 planner.loadPerformance(currentStudent.getId());
-                root.setCenter(planner.getRevisionView(currentStudent.getId()));
+                root.setCenter(planner.getRevisionView(currentStudent.getId(), this::refreshRevisionView));
             } catch (Exception ex) {
-                showAlert("Error: " + ex.getMessage());
+                showAlert("Error refreshing: " + ex.getMessage());
             }
-        });
+        };
+        
+        root.setCenter(planner.getRevisionView(currentStudent.getId(), refreshView));
+    } catch (Exception ex) {
+        showAlert("Error: " + ex.getMessage());
+    }
+});
         perfBtn.setOnAction(e -> showAddPerformanceDialog());
         logoutBtn.setOnAction(e -> showLoginScreen());
         
@@ -1101,6 +1112,33 @@ private void showAddPerformanceDialog() {
     });
     
     dialog.showAndWait();
+}
+
+
+
+// Add this helper method in StudyToolApp
+private void showDeleteConfirmation(String itemType, String itemName, Runnable deleteAction) {
+    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+    confirm.setTitle("Delete " + itemType);
+    confirm.setHeaderText("Delete " + itemName + "?");
+    confirm.setContentText("This will also delete all associated scores. Are you sure?");
+    
+    confirm.showAndWait().ifPresent(response -> {
+        if(response.getText().equals("OK")) {
+            deleteAction.run();
+        }
+    });
+}
+
+
+private void refreshRevisionView() {
+    try {
+        planner.loadPerformance(currentStudent.getId());
+        BorderPane root = (BorderPane) primaryStage.getScene().getRoot();
+        root.setCenter(planner.getRevisionView(currentStudent.getId(), this::refreshRevisionView));
+    } catch (Exception e) {
+        showAlert("Refresh error: " + e.getMessage());
+    }
 }
 
 private void showSubjectAnalysis() {
