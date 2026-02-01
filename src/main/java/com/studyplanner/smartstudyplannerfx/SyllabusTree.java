@@ -42,7 +42,7 @@ public class SyllabusTree {
         container.setPadding(new Insets(20));
         container.setStyle("-fx-background-color: linear-gradient(to bottom right, #e0eafc, #cfdef3);");
         
-        Label title = new Label("🌳 Syllabus Structure");
+        Label title = new Label("Syllabus Structure");
         title.setFont(Font.font("System", FontWeight.BOLD, 24));
         title.setTextFill(Color.web("#2c3e50"));
         
@@ -117,7 +117,7 @@ public class SyllabusTree {
         e.printStackTrace();
     }
     
-    Label hint = new Label("💡 Leave 'Parent Topic' empty to create a main chapter");
+    Label hint = new Label("Leave 'Parent Topic' empty to create a main chapter");
     hint.setFont(Font.font("System", 11));
     hint.setTextFill(Color.web("#7f8c8d"));
     
@@ -166,7 +166,7 @@ public class SyllabusTree {
                 ps.setString(3, topicName);
                 ps.executeUpdate();
                 
-                showAlert("✅ Added topic: " + topicName);
+                showAlert("Added topic: " + topicName);
                 
                 // Refresh the syllabus view
                 refreshSyllabusView(subjectId, subjectName, parentContainer);

@@ -1,5 +1,6 @@
 package com.studyplanner.smartstudyplannerfx;
-
+import javafx.animation.FadeTransition;
+import javafx.util.Duration;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -17,10 +18,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.event.ActionEvent;
+import javafx.scene.input.MouseButton;
 
 public class StudyToolApp extends Application {
     private Stage primaryStage;
@@ -28,6 +31,14 @@ public class StudyToolApp extends Application {
     private StudyGraph graph = new StudyGraph();
     private SyllabusTree tree = new SyllabusTree();
     private RevisionPlanner planner = new RevisionPlanner();
+    
+    
+private Stage studyPlanStage;
+private VBox planContent;
+private Label remainingCountLbl;
+private Label completedCountLbl;
+private int completedCount = 0;
+
     
     
     private Stage analysisStage;
@@ -53,7 +64,7 @@ primaryStage.requestFocus();
         root.setPadding(new Insets(40));
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #667eea, #764ba2);");
         
-        Label title = new Label("🎓 Smart Study Tool");
+        Label title = new Label(" Smart Study Tool");
         title.setFont(Font.font("System", FontWeight.BOLD, 36));
         title.setTextFill(Color.WHITE);
         title.setEffect(new DropShadow(10, Color.rgb(0,0,0,0.3)));
@@ -190,94 +201,109 @@ primaryStage.requestFocus();
     }
     
     private void showDashboard() {
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f5f6fa;");
-        
-        // Sidebar
-        VBox sidebar = new VBox(10);
-        sidebar.setPadding(new Insets(20));
-        sidebar.setPrefWidth(250);
-        sidebar.setStyle("-fx-background-color: #2c3e50;");
-       
-        
-        Label userLbl = new Label("👤 " + currentStudent.getName());
-        userLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
-        userLbl.setTextFill(Color.WHITE);
-        userLbl.setWrapText(true);
-        
-        Button quickAddBtn = createNavButton("➕ Add Score", "#e67e22");
-quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
-        Button studyPathBtn = createNavButton("📚 Study Path", "#3498db");
-        Button syllabusBtn = createNavButton("🌳 Syllabus", "#27ae60");
-        Button perfBtn = createNavButton("➕ Add Performance", "#f39c12");
-        Button revisionBtn = createNavButton("🔥 Revision Plan", "#e74c3c");
-        Button logoutBtn = createNavButton("🚪 Logout", "#95a5a6");
-        
-        
-        // STUDY PATH - Now for Adding Your Subjects (Not showing default graph)
-studyPathBtn.setOnAction(e -> showAddMySubjectDialog());
-
-// SYLLABUS - Now for Viewing/Selecting Your Data (Not showing default tree)
-syllabusBtn.setOnAction(e -> showMySyllabusSelector());
-
-
-
-        
-       // studyPathBtn.setOnAction(e -> root.setCenter(graph.getStudyPathView()));
-       // syllabusBtn.setOnAction(e -> root.setCenter(tree.getTreeView()));
-       
-       
-       revisionBtn.setOnAction(e -> {
-    try {
-        planner.loadPerformance(currentStudent.getId());
-        
-        // Pass a callback that refreshes the view
-        Runnable refreshView = () -> {
-            try {
-                planner.loadPerformance(currentStudent.getId());
-                root.setCenter(planner.getRevisionView(currentStudent.getId(), this::refreshRevisionView));
-            } catch (Exception ex) {
-                showAlert("Error refreshing: " + ex.getMessage());
-            }
-        };
-        
-        root.setCenter(planner.getRevisionView(currentStudent.getId(), refreshView));
-    } catch (Exception ex) {
-        showAlert("Error: " + ex.getMessage());
+    // Close any existing analysis windows to prevent node conflicts
+    if(analysisStage != null && analysisStage.isShowing()) {
+        analysisStage.close();
     }
-});
-        perfBtn.setOnAction(e -> showAddPerformanceDialog());
-        logoutBtn.setOnAction(e -> showLoginScreen());
-        
-        Region spacer = new Region();
+    
+    BorderPane root = new BorderPane();
+    root.setStyle("-fx-background-color: #f5f6fa;");
+    
+    // Sidebar - fresh instance
+    VBox sidebar = new VBox(10);
+    sidebar.setPadding(new Insets(20));
+    sidebar.setPrefWidth(250);
+    sidebar.setStyle("-fx-background-color: #2c3e50;");
+    
+    // CRITICAL FIX: Ensure sidebar is empty before adding
+    sidebar.getChildren().clear();
+    
+    Label userLbl = new Label("👤 " + currentStudent.getName());
+    userLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
+    userLbl.setTextFill(Color.WHITE);
+    userLbl.setWrapText(true);
+    
+    // Create buttons fresh (local variables, not class fields)
+    Button quickAddBtn = createNavButton("➕ Add Score", "#e67e22");
+    Button studyPathBtn = createNavButton("📚 Study Path", "#3498db");
+    Button syllabusBtn = createNavButton("🌳 Syllabus", "#27ae60");
+    Button perfBtn = createNavButton("➕ Add Performance", "#f39c12");
+    Button revisionBtn = createNavButton("🔥 Revision Plan", "#e74c3c");
+    Button studyPlanBtn = createNavButton("📋 Study Plan", "#9b59b6");
+    Button logoutBtn = createNavButton("🚪 Logout", "#95a5a6");
+    
+    // Set actions
+    quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
+    studyPathBtn.setOnAction(e -> showAddMySubjectDialog());
+    syllabusBtn.setOnAction(e -> showMySyllabusSelector());
+    studyPlanBtn.setOnAction(e -> generateStudyPlan());
+    
+    perfBtn.setOnAction(e -> showAddPerformanceDialog());
+    
+    revisionBtn.setOnAction(e -> {
+        try {
+            planner.loadPerformance(currentStudent.getId());
+            Runnable refreshView = () -> {
+                try {
+                    planner.loadPerformance(currentStudent.getId());
+                    root.setCenter(planner.getRevisionView(currentStudent.getId(), this::refreshRevisionView));
+                } catch (Exception ex) {
+                    showAlert("Error refreshing: " + ex.getMessage());
+                }
+            };
+            root.setCenter(planner.getRevisionView(currentStudent.getId(), refreshView));
+        } catch (Exception ex) {
+            showAlert("Error: " + ex.getMessage());
+        }
+    });
+    
+    logoutBtn.setOnAction(e -> {
+        currentStudent = null;
+        showLoginScreen();
+    });
+    
+    // Spacer
+    Region spacer = new Region();
     VBox.setVgrow(spacer, Priority.ALWAYS);
-        
-        
-         sidebar.getChildren().addAll(userLbl, new Region() {{ setPrefHeight(30); }}, 
-    studyPathBtn, syllabusBtn, quickAddBtn, revisionBtn, logoutBtn);
-        
-        // Default center
-        VBox welcome = new VBox(20);
-        welcome.setAlignment(Pos.CENTER);
-        welcome.setStyle("-fx-background-color: linear-gradient(to bottom right, #f5f7fa, #c3cfe2);");
-        
-        Label welcomeLbl = new Label("Welcome, " + currentStudent.getName() + "! 👋");
-        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
-        welcomeLbl.setTextFill(Color.web("#2c3e50"));
-        
-        Label subLbl = new Label("Select an option from the sidebar to get started");
-        subLbl.setFont(Font.font("System", 16));
-        subLbl.setTextFill(Color.web("#7f8c8d"));
-        
-        welcome.getChildren().addAll(welcomeLbl, subLbl);
-        
-        root.setLeft(sidebar);
-        root.setCenter(welcome);
-        
-        Scene scene = new Scene(root, 1200, 800);
-        primaryStage.setScene(scene);
-        primaryStage.setMaximized(true);
-    }
+    
+    // Add ALL children at once using a single addAll call
+    sidebar.getChildren().addAll(
+        userLbl, 
+        new Region() {{ setPrefHeight(30); }}, 
+        studyPathBtn, 
+        syllabusBtn, 
+        quickAddBtn, 
+        studyPlanBtn,
+        revisionBtn, 
+        spacer,
+        logoutBtn
+    );
+    
+    // Welcome content
+    VBox welcome = new VBox(20);
+    welcome.setAlignment(Pos.CENTER);
+    welcome.setStyle("-fx-background-color: linear-gradient(to bottom right, #f5f7fa, #c3cfe2);");
+    
+    Label welcomeLbl = new Label("Welcome, " + currentStudent.getName() + "! 👋");
+    welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
+    welcomeLbl.setTextFill(Color.web("#2c3e50"));
+    
+    Label subLbl = new Label("Select an option from the sidebar to get started");
+    subLbl.setFont(Font.font("System", 16));
+    subLbl.setTextFill(Color.web("#7f8c8d"));
+    
+    welcome.getChildren().addAll(welcomeLbl, subLbl);
+    
+    root.setLeft(sidebar);
+    root.setCenter(welcome);
+    
+    Scene scene = new Scene(root, 1200, 800);
+    primaryStage.setScene(scene);
+    primaryStage.setMaximized(true);
+    
+    // Bring to front to ensure it's visible
+    primaryStage.toFront();
+}
     
     private Button createNavButton(String text, String color) {
         Button btn = new Button(text);
@@ -295,11 +321,16 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
     
     
    private void showAddMySubjectDialog() {
+       
+   
+       
+       
+       
     VBox container = new VBox(15);
     container.setPadding(new Insets(20));
     container.setStyle("-fx-background-color: linear-gradient(to bottom right, #667eea, #764ba2);");
     
-    Label title = new Label("📚 Add My Study Path");
+    Label title = new Label(" Add My Study Path");
     title.setFont(Font.font("System", FontWeight.BOLD, 24));
     title.setTextFill(Color.WHITE);
     
@@ -330,7 +361,7 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
     Label prereqLabel = new Label("Prerequisite (Optional):");
     prereqLabel.setTextFill(Color.web("#7f8c8d"));
     
-    Label hint = new Label("💡 Optional: Select if this subject requires another subject first\nOr leave empty if no prerequisites");
+    Label hint = new Label("Optional: Select if this subject requires another subject first\nOr leave empty if no prerequisites");
     hint.setTextFill(Color.web("#7f8c8d"));
     hint.setFont(Font.font("System", 11));
     
@@ -390,7 +421,7 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
                 }
             }
             
-            status.setText("✅ Added: " + name);
+            status.setText(" Added: " + name);
             status.setTextFill(Color.web("#27ae60"));
             subjectField.clear();
             descArea.clear();
@@ -401,10 +432,10 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
             
         } catch (SQLException ex) {
             if(ex.getMessage().contains("Duplicate")) {
-                status.setText("⚠️ Subject already exists!");
+                status.setText(" Subject already exists!");
                 status.setTextFill(Color.web("#e74c3c"));
             } else {
-                status.setText("✗ Error: " + ex.getMessage());
+                status.setText(" Error: " + ex.getMessage());
                 status.setTextFill(Color.web("#e74c3c"));
             }
         } catch (Exception ex) {
@@ -412,7 +443,9 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
         }
     });
     
-    viewMyBtn.setOnAction(ev -> showMySubjectsList());
+       viewMyBtn.setOnAction(ev -> {
+    Platform.runLater(() -> showMySubjectsList());
+});
     
     // Add to formCard AFTER all variables are initialized
     btnBox.getChildren().addAll(addBtn, viewMyBtn);
@@ -438,11 +471,21 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
     //show syllabus sector 
     
     private void showMySyllabusSelector() {
+        
+        final String[] currentSubjectHolder = new String[1];
+        
+       
+        
+        
     VBox container = new VBox(15);
     container.setPadding(new Insets(20));
     container.setStyle("-fx-background-color: linear-gradient(to bottom right, #e0eafc, #cfdef3);");
     
-    Label title = new Label("🌳 My Syllabus");
+    
+    
+    
+    
+    Label title = new Label("My Syllabus");
     title.setFont(Font.font("System", FontWeight.BOLD, 24));
     title.setTextFill(Color.web("#2c3e50"));
     
@@ -483,8 +526,9 @@ syllabusBtn.setOnAction(e -> showMySyllabusSelector());
     contentArea.getChildren().add(defaultMsg);
     
     loadBtn.setOnAction(e -> {
-        String subject = subjectCombo.getValue();
-        if(subject == null) return;
+    String subject = subjectCombo.getValue();
+    if(subject == null) return;
+    currentSubjectHolder[0] = subject;
         
         contentArea.getChildren().clear();
         
@@ -625,8 +669,8 @@ private void showAddTopicDialog(int subjectId, String subjectName, VBox parentCo
     }
     
     Label hint = new Label(parentCombo.isDisable() ? 
-        "💡 Creating main chapter (no parent available)" : 
-        "💡 Leave empty to create main chapter, or select existing topic as parent");
+        "Creating main chapter (no parent available)" : 
+        "Leave empty to create main chapter, or select existing topic as parent");
     hint.setFont(Font.font("System", 11));
     hint.setTextFill(Color.web("#7f8c8d"));
     
@@ -733,76 +777,74 @@ private void showAddTopicDialog(int subjectId, String subjectName, VBox parentCo
     dialog.showAndWait();
 }
 
-// Helper method to refresh the tree view after adding
-private void refreshSyllabusView(int subjectId, String subjectName, VBox contentArea) {
-    contentArea.getChildren().clear();
-    
+
+
+private void deleteTopicRecursive(int topicId, int subjectId, VBox contentArea) {
+    Connection con = null;
     try {
-        Connection con = DBConnection.getConnection();
+        con = DBConnection.getConnection();
+        con.setAutoCommit(false);
         
-        Label subjTitle = new Label("📖 " + subjectName);
-        subjTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
-        subjTitle.setTextFill(Color.web("#2c3e50"));
+        // Recursive deletion function to handle tree structure
+        deleteTopicAndChildren(con, topicId);
         
-        Button addTopicBtn = new Button("➕ Add Topic to this Subject");
-        addTopicBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 8 15;");
-        addTopicBtn.setOnAction(ev -> showAddTopicDialog(subjectId, subjectName, contentArea));
+        con.commit();
+        showAlert("✅ Topic deleted successfully!");
         
-        HBox header = new HBox(20);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getChildren().addAll(subjTitle, addTopicBtn);
-        
-        contentArea.getChildren().add(header);
-        
-        // Rebuild tree
-        TreeView<String> treeView = new TreeView<>();
-        TreeItem<String> rootItem = new TreeItem<>("Topics");
-        rootItem.setExpanded(true);
-        
-        PreparedStatement ps = con.prepareStatement("SELECT * FROM syllabus WHERE subject_id=?");
+        // Refresh the view - need to get subjectName again
+        String subjectName = "";
+        PreparedStatement ps = con.prepareStatement("SELECT subject_name FROM subjects WHERE subject_id = ?");
         ps.setInt(1, subjectId);
         ResultSet rs = ps.executeQuery();
+        if(rs.next()) subjectName = rs.getString("subject_name");
         
-        Map<Integer, TreeItem<String>> itemMap = new HashMap<>();
-        List<Integer[]> relations = new ArrayList<>();
+        refreshSyllabusView(subjectId, subjectName, contentArea);
         
-        while(rs.next()) {
-            int topicId = rs.getInt("topic_id");
-            String topicName = rs.getString("topic_name");
-            int parentId = rs.getInt("parent_topic_id");
-            
-            TreeItem<String> item = new TreeItem<>("📂 " + topicName);
-            item.setExpanded(true);
-            itemMap.put(topicId, item);
-            
-            if(parentId == 0) {
-                rootItem.getChildren().add(item);
-            } else {
-                relations.add(new Integer[]{topicId, parentId});
-            }
+        // Refresh analysis window if open
+        if(analysisStage != null && analysisStage.isShowing()) {
+            refreshAnalysisContent();
         }
         
-        // Build hierarchy
-        for(Integer[] rel : relations) {
-            TreeItem<String> child = itemMap.get(rel[0]);
-            TreeItem<String> parent = itemMap.get(rel[1]);
-            if(parent != null && child != null) {
-                parent.getChildren().add(child);
-            }
+    } catch (Exception e) {
+        try {
+            if(con != null) con.rollback();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
-        
-        treeView.setRoot(rootItem);
-        treeView.setStyle("-fx-font-size: 14px;");
-        
-        if(rootItem.getChildren().isEmpty()) {
-            contentArea.getChildren().add(new Label("No topics yet. Click 'Add Topic' to create your syllabus!"));
-        } else {
-            contentArea.getChildren().add(treeView);
+        showAlert("❌ Error deleting topic: " + e.getMessage());
+        e.printStackTrace();
+    } finally {
+        try {
+            if(con != null) con.setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        
-    } catch (Exception ex) {
-        contentArea.getChildren().add(new Label("Error refreshing: " + ex.getMessage()));
     }
+}
+
+// Helper to recursively delete topic and all its children
+private void deleteTopicAndChildren(Connection con, int topicId) throws SQLException {
+    // First delete children recursively
+    PreparedStatement ps = con.prepareStatement(
+        "SELECT topic_id FROM syllabus WHERE parent_topic_id = ?"
+    );
+    ps.setInt(1, topicId);
+    ResultSet rs = ps.executeQuery();
+    
+    while(rs.next()) {
+        int childId = rs.getInt("topic_id");
+        deleteTopicAndChildren(con, childId); // Recursive call
+    }
+    
+    // Delete performance scores for this topic
+    ps = con.prepareStatement("DELETE FROM performance WHERE topic_id = ?");
+    ps.setInt(1, topicId);
+    ps.executeUpdate();
+    
+    // Now delete this topic
+    ps = con.prepareStatement("DELETE FROM syllabus WHERE topic_id = ?");
+    ps.setInt(1, topicId);
+    ps.executeUpdate();
 }
     
     
@@ -822,52 +864,210 @@ private void loadMySubjects(ComboBox<String> combo) {
 }
 
 private void showMySubjectsList() {
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("My Subjects");
-    alert.setHeaderText("📚 Your Study Path (Graph Structure)");
+    Stage listStage = new Stage();
+    listStage.setTitle("My Subjects");
+    listStage.setWidth(600);
+    listStage.setHeight(500);
     
     VBox content = new VBox(10);
-    content.setPadding(new Insets(10));
+    content.setPadding(new Insets(15));
+    content.setStyle("-fx-background-color: #f5f5f5;");
     
+    Label header = new Label("📚 Your Study Path (Graph Structure)");
+    header.setFont(Font.font("System", FontWeight.BOLD, 18));
+    header.setPadding(new Insets(0, 0, 10, 0));
+    
+    ScrollPane scrollPane = new ScrollPane();
+    VBox subjectsContainer = new VBox(8);
+    subjectsContainer.setPadding(new Insets(10));
+    scrollPane.setContent(subjectsContainer);
+    scrollPane.setFitToWidth(true);
+    scrollPane.setStyle("-fx-background: #f5f5f5;");
+    
+    // Refresh function
+    Runnable refreshList = () -> {
+        subjectsContainer.getChildren().clear();
+        loadSubjectsIntoContainer(subjectsContainer, listStage);
+    };
+    
+    loadSubjectsIntoContainer(subjectsContainer, listStage);
+    
+    Button closeBtn = new Button("Close");
+    closeBtn.setStyle("-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-padding: 8 20;");
+    closeBtn.setOnAction(e -> listStage.close());
+    
+    content.getChildren().addAll(header, scrollPane, closeBtn);
+    
+    Scene scene = new Scene(content);
+    listStage.setScene(scene);
+    listStage.show();
+}
+
+private void loadSubjectsIntoContainer(VBox container, Stage parentStage) {
     try {
         Connection con = DBConnection.getConnection();
         
-        // Get subjects with prerequisites
-        String sql = "SELECT s.subject_name, GROUP_CONCAT(p.subject_name) as prereqs " +
-                     "FROM subjects s LEFT JOIN prerequisites pr ON s.subject_id = pr.subject_id " +
-                     "LEFT JOIN subjects p ON pr.prerequisite_id = p.subject_id " +
-                     "GROUP BY s.subject_id";
+        // FIXED: Removed p.performance_id reference, using COUNT(*) instead
+        String sql = "SELECT s.subject_id, s.subject_name, s.description, " +
+                     "COUNT(DISTINCT sy.topic_id) as topic_count, " +
+                     "COUNT(DISTINCT p.student_id) as score_count, " +  // Changed from performance_id
+                     "GROUP_CONCAT(DISTINCT pr.prerequisite_id) as prereq_ids " +
+                     "FROM subjects s " +
+                     "LEFT JOIN syllabus sy ON s.subject_id = sy.subject_id " +
+                     "LEFT JOIN performance p ON s.subject_id = p.subject_id " +
+                     "LEFT JOIN prerequisites pr ON s.subject_id = pr.subject_id " +
+                     "GROUP BY s.subject_id " +
+                     "ORDER BY s.subject_name";
         
         ResultSet rs = con.createStatement().executeQuery(sql);
         
         while(rs.next()) {
-            String subject = rs.getString("subject_name");
-            String prereqs = rs.getString("prereqs");
+            int subjectId = rs.getInt("subject_id");
+            String subjectName = rs.getString("subject_name");
+            String desc = rs.getString("description");
+            int topicCount = rs.getInt("topic_count");
+            int scoreCount = rs.getInt("score_count");
+            String prereqs = rs.getString("prereq_ids");
             
-            HBox row = new HBox(10);
-            row.setAlignment(Pos.CENTER_LEFT);
+            // Subject card
+            HBox card = new HBox(15);
+            card.setAlignment(Pos.CENTER_LEFT);
+            card.setPadding(new Insets(12));
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 8; " +
+                         "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
             
-            Label subjLabel = new Label("📘 " + subject);
-            subjLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+            VBox info = new VBox(3);
+            Label nameLbl = new Label("📘 " + subjectName);
+            nameLbl.setFont(Font.font("System", FontWeight.BOLD, 14));
             
-            String prereqText = (prereqs == null || prereqs.isEmpty()) ? " (No prerequisite)" : " → Requires: " + prereqs;
-            Label prereqLabel = new Label(prereqText);
-            prereqLabel.setTextFill(Color.web("#7f8c8d"));
+            String details = "";
+            if(desc != null && !desc.isEmpty()) details += desc + " • ";
+            details += topicCount + " topics";
+            if(scoreCount > 0) details += " • " + scoreCount + " scores";
+            if(prereqs != null && !prereqs.isEmpty()) {
+                details += " • has prerequisites";
+            }
             
-            row.getChildren().addAll(subjLabel, prereqLabel);
-            content.getChildren().add(row);
+            Label detailLbl = new Label(details);
+            detailLbl.setFont(Font.font("System", 11));
+            detailLbl.setTextFill(Color.web("#7f8c8d"));
+            
+            info.getChildren().addAll(nameLbl, detailLbl);
+            HBox.setHgrow(info, Priority.ALWAYS);
+            
+            // Delete button
+            Button deleteBtn = new Button("🗑");
+            deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; " +
+                              "-fx-background-radius: 5; -fx-cursor: hand; -fx-font-size: 12px;");
+            deleteBtn.setTooltip(new Tooltip("Delete this subject"));
+            
+            deleteBtn.setOnAction(e -> {
+                // Check if this subject is a prerequisite for others
+                try {
+                    PreparedStatement checkPs = con.prepareStatement(
+                        "SELECT COUNT(*) as count FROM prerequisites WHERE prerequisite_id = ?"
+                    );
+                    checkPs.setInt(1, subjectId);
+                    ResultSet checkRs = checkPs.executeQuery();
+                    if(checkRs.next() && checkRs.getInt("count") > 0) {
+                        showAlert("⚠️ Cannot delete! This subject is required as prerequisite for other subjects.");
+                        return;
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+                
+                // Confirmation dialog
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Confirm Deletion");
+                confirm.setHeaderText("Delete '" + subjectName + "'?");
+                confirm.setContentText("This will permanently delete:\n" +
+                                     "• " + topicCount + " topic(s)\n" +
+                                     "• " + scoreCount + " performance record(s)\n\n" +
+                                     "Are you sure?");
+                
+                Optional<ButtonType> result = confirm.showAndWait();
+                if(result.isPresent() && result.get() == ButtonType.OK) {
+                    deleteSubject(subjectId, container, parentStage);
+                }
+            });
+            
+            card.getChildren().addAll(info, deleteBtn);
+            container.getChildren().add(card);
         }
         
-        if(content.getChildren().isEmpty()) {
-            content.getChildren().add(new Label("No subjects added yet. Add your first subject above!"));
+        if(container.getChildren().isEmpty()) {
+            container.getChildren().add(new Label("No subjects added yet."));
         }
         
     } catch (Exception e) {
-        content.getChildren().add(new Label("Error loading: " + e.getMessage()));
+        container.getChildren().add(new Label("Error loading: " + e.getMessage()));
+        e.printStackTrace();
     }
-    
-    alert.getDialogPane().setContent(content);
-    alert.showAndWait();
+}
+
+private void deleteSubject(int subjectId, VBox container, Stage parentStage) {
+    Connection con = null;
+    try {
+        con = DBConnection.getConnection();
+        con.setAutoCommit(false);
+        
+        // 1. Delete performance records
+        PreparedStatement ps = con.prepareStatement("DELETE FROM performance WHERE subject_id = ?");
+        ps.setInt(1, subjectId);
+        ps.executeUpdate();
+        
+        // 2. Delete prerequisites links
+        ps = con.prepareStatement("DELETE FROM prerequisites WHERE subject_id = ? OR prerequisite_id = ?");
+        ps.setInt(1, subjectId);
+        ps.setInt(2, subjectId);
+        ps.executeUpdate();
+        
+        // 3. Delete topics (cascade will handle children if using FK constraints, otherwise delete in order)
+        ps = con.prepareStatement("DELETE FROM syllabus WHERE subject_id = ?");
+        ps.setInt(1, subjectId);
+        ps.executeUpdate();
+        
+        // 4. Delete subject
+        ps = con.prepareStatement("DELETE FROM subjects WHERE subject_id = ?");
+        ps.setInt(1, subjectId);
+        int affected = ps.executeUpdate();
+        
+        con.commit();
+        
+        if(affected > 0) {
+            showAlert("✅ Subject deleted successfully!");
+            
+            // Refresh list if container exists (from subject list view)
+            if(container != null) {
+                container.getChildren().clear();
+                loadSubjectsIntoContainer(container, parentStage);
+            }
+            
+            // Refresh analysis window if open
+            if(analysisStage != null && analysisStage.isShowing()) {
+                refreshAnalysisContent();
+            }
+            
+            // Reload graph/tree data
+            graph.loadSubjects();
+        }
+        
+    } catch (Exception e) {
+        try {
+            if(con != null) con.rollback();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        showAlert("❌ Error deleting: " + e.getMessage());
+        e.printStackTrace();
+    } finally {
+        try {
+            if(con != null) con.setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
     
     
@@ -1150,69 +1350,6 @@ private void refreshRevisionView() {
 
 
     
-
-
-    /*private void loadMySubjects(ComboBox<String> combo) {
-    combo.getItems().clear();
-    try {
-    Connection con = DBConnection.getConnection();
-    ResultSet rs = con.createStatement().executeQuery("SELECT subject_name FROM subjects ORDER BY subject_name");
-    while(rs.next()) {
-    combo.getItems().add(rs.getString("subject_name"));
-    }
-    } catch (Exception e) {}
-    }*/
-
-/*private void showMySubjectsList() {
-Alert alert = new Alert(Alert.AlertType.INFORMATION);
-alert.setTitle("My Subjects");
-alert.setHeaderText("📚 Your Study Path (Graph Structure)");
-
-VBox content = new VBox(10);
-content.setPadding(new Insets(10));
-
-try {
-Connection con = DBConnection.getConnection();
-
-// Get subjects with prerequisites
-String sql = "SELECT s.subject_name, GROUP_CONCAT(p.subject_name) as prereqs " +
-"FROM subjects s LEFT JOIN prerequisites pr ON s.subject_id = pr.subject_id " +
-"LEFT JOIN subjects p ON pr.prerequisite_id = p.subject_id " +
-"GROUP BY s.subject_id";
-
-ResultSet rs = con.createStatement().executeQuery(sql);
-
-while(rs.next()) {
-String subject = rs.getString("subject_name");
-String prereqs = rs.getString("prereqs");
-
-HBox row = new HBox(10);
-row.setAlignment(Pos.CENTER_LEFT);
-
-Label subjLabel = new Label("📘 " + subject);
-subjLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
-
-String prereqText = (prereqs == null || prereqs.isEmpty()) ? " (No prerequisite)" : " → Requires: " + prereqs;
-Label prereqLabel = new Label(prereqText);
-prereqLabel.setTextFill(Color.web("#7f8c8d"));
-
-row.getChildren().addAll(subjLabel, prereqLabel);
-content.getChildren().add(row);
-}
-
-if(content.getChildren().isEmpty()) {
-content.getChildren().add(new Label("No subjects added yet. Add your first subject above!"));
-}
-
-} catch (Exception e) {
-content.getChildren().add(new Label("Error loading: " + e.getMessage()));
-}
-
-alert.getDialogPane().setContent(content);
-alert.showAndWait();
-}*/
-    
-    
     
     
     
@@ -1350,6 +1487,188 @@ private void showSubjectAnalysis() {
     refreshAnalysisContent();
 }
 
+
+
+//refresh sylabus
+
+private void refreshSyllabusView(int subjectId, String subjectName, VBox contentArea) {
+    contentArea.getChildren().clear();
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        
+        Label subjTitle = new Label("📖 " + subjectName);
+        subjTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
+        subjTitle.setTextFill(Color.web("#2c3e50"));
+        
+        Button addTopicBtn = new Button("➕ Add Topic");
+        addTopicBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 8 15;");
+        addTopicBtn.setOnAction(ev -> showAddTopicDialog(subjectId, subjectName, contentArea));
+        
+        // Add Delete Subject button here too for convenience
+        Button deleteSubjectBtn = new Button("🗑 Delete Subject");
+        deleteSubjectBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 15;");
+        deleteSubjectBtn.setOnAction(ev -> {
+            // Check if prerequisite for others
+            try {
+                PreparedStatement ps = con.prepareStatement(
+                    "SELECT COUNT(*) as count FROM prerequisites WHERE prerequisite_id = ?"
+                );
+                ps.setInt(1, subjectId);
+                ResultSet rs = ps.executeQuery();
+                if(rs.next() && rs.getInt("count") > 0) {
+                    showAlert("⚠️ Cannot delete! This subject is required as prerequisite for other subjects.");
+                    return;
+                }
+                
+                // Confirmation
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Delete Subject");
+                confirm.setHeaderText("Delete '" + subjectName + "'?");
+                confirm.setContentText("This will delete all topics and scores for this subject!");
+                
+                if(confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                    deleteSubject(subjectId, null, null);
+                    showDashboard(); // Go back to dashboard
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+        
+        HBox header = new HBox(10);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.getChildren().addAll(subjTitle, addTopicBtn, deleteSubjectBtn);
+        
+        contentArea.getChildren().add(header);
+        
+        // Rebuild tree with delete functionality
+        TreeView<String> treeView = new TreeView<>();
+        TreeItem<String> rootItem = new TreeItem<>("Topics");
+        rootItem.setExpanded(true);
+        
+        PreparedStatement ps = con.prepareStatement("SELECT * FROM syllabus WHERE subject_id=? ORDER BY topic_id");
+        ps.setInt(1, subjectId);
+        ResultSet rs = ps.executeQuery();
+        
+        Map<Integer, TreeItem<String>> itemMap = new HashMap<>();
+        // Use TreeItem directly as key, NOT hashCode!
+        Map<TreeItem<String>, Integer> treeItemToIdMap = new HashMap<>();
+        List<Integer[]> relations = new ArrayList<>();
+        
+        while(rs.next()) {
+            int topicId = rs.getInt("topic_id");
+            String topicName = rs.getString("topic_name");
+            int parentId = rs.getInt("parent_topic_id");
+            
+            TreeItem<String> item = new TreeItem<>("📂 " + topicName);
+            item.setExpanded(true);
+            itemMap.put(topicId, item);
+            treeItemToIdMap.put(item, topicId); // Direct mapping!
+            
+            if(parentId == 0 || rs.wasNull()) {
+                rootItem.getChildren().add(item);
+            } else {
+                relations.add(new Integer[]{topicId, parentId});
+            }
+        }
+        
+        // Build hierarchy
+        for(Integer[] rel : relations) {
+            TreeItem<String> child = itemMap.get(rel[0]);
+            TreeItem<String> parent = itemMap.get(rel[1]);
+            if(parent != null && child != null) {
+                parent.getChildren().add(child);
+            }
+        }
+        
+        treeView.setRoot(rootItem);
+        treeView.setStyle("-fx-font-size: 14px;");
+        
+        // Right-click context menu
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem deleteItem = new MenuItem("🗑 Delete Topic");
+        deleteItem.setStyle("-fx-text-fill: #e74c3c;");
+        
+        deleteItem.setOnAction(e -> {
+            TreeItem<String> selected = treeView.getSelectionModel().getSelectedItem();
+            if(selected != null && selected != rootItem) {
+                // Get ID using the TreeItem directly as key
+                Integer topicId = treeItemToIdMap.get(selected);
+                
+                if(topicId == null) {
+                    showAlert("Error: Could not find topic ID");
+                    return;
+                }
+                
+                String topicName = selected.getValue().replace("📂 ", "");
+                boolean hasChildren = !selected.getChildren().isEmpty();
+                
+                try {
+                    // Check for scores
+                    PreparedStatement checkPs = con.prepareStatement(
+                        "SELECT COUNT(*) as count FROM performance WHERE topic_id = ?"
+                    );
+                    checkPs.setInt(1, topicId);
+                    ResultSet checkRs = checkPs.executeQuery();
+                    int scoreCount = 0;
+                    if(checkRs.next()) scoreCount = checkRs.getInt("count");
+                    
+                    String warning = "Delete '" + topicName + "'?\n\n";
+                    if(hasChildren) warning += "⚠️ This topic has sub-topics!\n";
+                    if(scoreCount > 0) warning += "⚠️ Will delete " + scoreCount + " score(s)!\n";
+                    
+                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                    confirm.setTitle("Confirm Deletion");
+                    confirm.setHeaderText("Delete Topic");
+                    confirm.setContentText(warning);
+                    
+                    if(confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                        deleteTopicRecursive(topicId, subjectId, contentArea);
+                    }
+                    
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    showAlert("Error checking dependencies: " + ex.getMessage());
+                }
+            }
+        });
+        
+        contextMenu.getItems().add(deleteItem);
+        treeView.setContextMenu(contextMenu); // Set context menu on tree
+        
+        // Also handle right-click to select the item first
+        treeView.setOnMouseClicked(e -> {
+            if(e.getButton() == MouseButton.SECONDARY) {
+                TreeItem<String> selected = treeView.getSelectionModel().getSelectedItem();
+                if(selected != null && selected != rootItem) {
+                    contextMenu.show(treeView, e.getScreenX(), e.getScreenY());
+                }
+            }
+        });
+        
+        if(rootItem.getChildren().isEmpty()) {
+            Label emptyLbl = new Label("No topics yet. Click 'Add Topic' to create your syllabus!");
+            emptyLbl.setTextFill(Color.web("#7f8c8d"));
+            contentArea.getChildren().add(emptyLbl);
+        } else {
+            contentArea.getChildren().add(treeView);
+            Label hint = new Label("💡 Right-click any topic to delete");
+            hint.setFont(Font.font("System", 11));
+            hint.setTextFill(Color.web("#7f8c8d"));
+            contentArea.getChildren().add(hint);
+        }
+        
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        contentArea.getChildren().add(new Label("Error: " + ex.getMessage()));
+    }
+}
+
+
+
+
+
 private void refreshAnalysisContent() {
     if (analysisContentBox == null) return;
     
@@ -1486,6 +1805,482 @@ private void refreshAnalysisContent() {
         e.printStackTrace();
     }
 }
+
+
+
+//study plan
+
+
+// Add this method to create the completion tracking table (run once)
+// ==================== STUDY PLAN METHODS ====================
+
+private void initializeWeekCompletionTable() {
+    try {
+        Connection con = DBConnection.getConnection();
+        Statement stmt = con.createStatement();
+        stmt.execute("CREATE TABLE IF NOT EXISTS week_completion (" +
+                "student_id INT, " +
+                "subject_id INT, " +
+                "completed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                "original_avg_score DOUBLE, " +
+                "PRIMARY KEY (student_id, subject_id))");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+private int[] calculateWeeklyStats() {
+    int[] stats = new int[2]; // [serious(≤40), weekly(41-70)]
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        
+        String seriousSql = "SELECT COUNT(*) as cnt FROM (" +
+                "SELECT s.subject_id FROM subjects s " +
+                "JOIN performance p ON s.subject_id = p.subject_id AND p.student_id = ? " +
+                "LEFT JOIN week_completion wc ON s.subject_id = wc.subject_id AND wc.student_id = ? " +
+                "WHERE wc.subject_id IS NULL " +
+                "GROUP BY s.subject_id HAVING AVG(p.score) <= 40) t";
+        
+        PreparedStatement ps = con.prepareStatement(seriousSql);
+        ps.setInt(1, currentStudent.getId());
+        ps.setInt(2, currentStudent.getId());
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()) stats[0] = rs.getInt("cnt");
+        
+        String weeklySql = "SELECT COUNT(*) as cnt FROM (" +
+                "SELECT s.subject_id FROM subjects s " +
+                "JOIN performance p ON s.subject_id = p.subject_id AND p.student_id = ? " +
+                "LEFT JOIN week_completion wc ON s.subject_id = wc.subject_id AND wc.student_id = ? " +
+                "WHERE wc.subject_id IS NULL " +
+                "GROUP BY s.subject_id HAVING AVG(p.score) > 40 AND AVG(p.score) <= 70) t";
+        
+        ps = con.prepareStatement(weeklySql);
+        ps.setInt(1, currentStudent.getId());
+        ps.setInt(2, currentStudent.getId());
+        rs = ps.executeQuery();
+        if(rs.next()) stats[1] = rs.getInt("cnt");
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return stats;
+}
+
+private void completeWeek(int subjectId, double originalScore) {
+    try {
+        Connection con = DBConnection.getConnection();
+        PreparedStatement ps = con.prepareStatement(
+            "INSERT INTO week_completion (student_id, subject_id, original_avg_score) " +
+            "VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE completed_date = CURRENT_TIMESTAMP"
+        );
+        ps.setInt(1, currentStudent.getId());
+        ps.setInt(2, subjectId);
+        ps.setDouble(3, originalScore);
+        ps.executeUpdate();
+    } catch (Exception e) {
+        e.printStackTrace();
+        showAlert("Error: " + e.getMessage());
+    }
+}
+
+private void boostSubjectScore(int subjectId, int boost) {
+    try {
+        Connection con = DBConnection.getConnection();
+        PreparedStatement ps = con.prepareStatement(
+            "UPDATE performance SET score = LEAST(100, score + ?) " +
+            "WHERE subject_id = ? AND student_id = ?"
+        );
+        ps.setInt(1, boost);
+        ps.setInt(2, subjectId);
+        ps.setInt(3, currentStudent.getId());
+        ps.executeUpdate();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+private void showCompletedWeeks() {
+    Stage stage = new Stage();
+    stage.setTitle("Completed Study History");
+    stage.setWidth(600);
+    stage.setHeight(500);
+    
+    VBox content = new VBox(15);
+    content.setPadding(new Insets(20));
+    content.setStyle("-fx-background-color: white;");
+    
+    Label header = new Label("✓ Completed Study Plans");
+    header.setFont(Font.font("System", FontWeight.BOLD, 20));
+    header.setTextFill(Color.BLACK);
+    content.getChildren().add(header);
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        String sql = "SELECT s.subject_name, wc.original_avg_score, wc.completed_date " +
+                     "FROM week_completion wc JOIN subjects s ON wc.subject_id = s.subject_id " +
+                     "WHERE wc.student_id = ? ORDER BY wc.completed_date DESC";
+        
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setInt(1, currentStudent.getId());
+        ResultSet rs = ps.executeQuery();
+        
+        boolean hasData = false;
+        while(rs.next()) {
+            hasData = true;
+            HBox row = new HBox(15);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setPadding(new Insets(15));
+            row.setStyle("-fx-background-color: #f0f0f0; -fx-background-radius: 5;");
+            
+            Label name = new Label(rs.getString("subject_name"));
+            name.setFont(Font.font("System", FontWeight.BOLD, 14));
+            name.setTextFill(Color.BLACK);
+            
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+            
+            Label score = new Label(String.format("%.0f%%", rs.getDouble("original_avg_score")));
+            score.setTextFill(Color.web("#27ae60"));
+            
+            Label date = new Label(rs.getTimestamp("completed_date").toLocalDateTime().toLocalDate().toString());
+            date.setTextFill(Color.GRAY);
+            
+            row.getChildren().addAll(name, spacer, score, date);
+            content.getChildren().add(row);
+        }
+        
+        if(!hasData) {
+            Label empty = new Label("No completed weeks yet.");
+            empty.setTextFill(Color.GRAY);
+            content.getChildren().add(empty);
+        }
+    } catch (Exception e) {
+        content.getChildren().add(new Label("Error: " + e.getMessage()));
+    }
+    
+    Button close = new Button("Close");
+    close.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-padding: 8 20;");
+    close.setOnAction(e -> stage.close());
+    content.getChildren().add(close);
+    
+    stage.setScene(new Scene(content));
+    stage.show();
+}
+
+private void generateStudyPlan() {
+    if(studyPlanStage != null && studyPlanStage.isShowing()) {
+        refreshSimplePlan();
+        studyPlanStage.toFront();
+        return;
+    }
+    
+    studyPlanStage = new Stage();
+    studyPlanStage.setTitle("Study Plan - Priority List");
+    studyPlanStage.setWidth(600);
+    studyPlanStage.setHeight(700);
+    
+    BorderPane root = new BorderPane();
+    root.setStyle("-fx-background-color: #ffffff;");
+    
+    // Simple header with counters
+    HBox header = new HBox(30);
+    header.setPadding(new Insets(20));
+    header.setAlignment(Pos.CENTER);
+    header.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #ddd; -fx-border-width: 0 0 2 0;");
+    
+    // Initialize counters
+    int[] counts = getPlanCounts();
+    
+    VBox remainingBox = createSimpleCounter("Remaining", counts[0], "#e74c3c");
+    VBox completedBox = createSimpleCounter("Completed", counts[1], "#27ae60");
+    
+    remainingCountLbl = (Label) ((VBox) remainingBox.getChildren().get(0)).getChildren().get(0);
+    completedCountLbl = (Label) ((VBox) completedBox.getChildren().get(0)).getChildren().get(0);
+    
+    header.getChildren().addAll(remainingBox, completedBox);
+    
+    ScrollPane scroll = new ScrollPane();
+    scroll.setFitToWidth(true);
+    scroll.setStyle("-fx-background: white;");
+    
+    planContent = new VBox(10);
+    planContent.setPadding(new Insets(15));
+    planContent.setStyle("-fx-background-color: white;");
+    
+    loadPrioritySubjects();
+    
+    scroll.setContent(planContent);
+    root.setCenter(scroll);
+    root.setTop(header);
+    
+    Scene scene = new Scene(root);
+    studyPlanStage.setScene(scene);
+    studyPlanStage.show();
+}
+
+private VBox createSimpleCounter(String label, int count, String color) {
+    VBox box = new VBox(5);
+    box.setAlignment(Pos.CENTER);
+    box.setPadding(new Insets(15, 30, 15, 30));
+    box.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 8px;");
+    
+    VBox inner = new VBox(); // Wrapper to hold reference
+    Label cnt = new Label(String.valueOf(count));
+    cnt.setFont(Font.font("System", FontWeight.BOLD, 32));
+    cnt.setTextFill(Color.WHITE);
+    inner.getChildren().add(cnt);
+    
+    Label lbl = new Label(label);
+    lbl.setFont(Font.font("System", FontWeight.BOLD, 14));
+    lbl.setTextFill(Color.WHITE);
+    
+    box.getChildren().addAll(inner, lbl);
+    return box;
+}
+
+private void loadPrioritySubjects() {
+    planContent.getChildren().clear();
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        
+        // Get subjects with avg score < 60, sorted low to high
+        String sql = "SELECT s.subject_id, s.subject_name, AVG(p.score) as avg_score, COUNT(p.topic_id) as topics_count " +
+                     "FROM subjects s " +
+                     "JOIN performance p ON s.subject_id = p.subject_id AND p.student_id = ? " +
+                     "WHERE p.score < 60 " +
+                     "GROUP BY s.subject_id " +
+                     "ORDER BY AVG(p.score) ASC";
+        
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setInt(1, currentStudent.getId());
+        ResultSet rs = ps.executeQuery();
+        
+        boolean hasItems = false;
+        int priority = 1;
+        
+        while(rs.next()) {
+            hasItems = true;
+            int subjectId = rs.getInt("subject_id");
+            String subjectName = rs.getString("subject_name");
+            double avgScore = rs.getDouble("avg_score");
+            int topicCount = rs.getInt("topics_count");
+            
+            VBox card = createPriorityCard(subjectId, subjectName, avgScore, topicCount, priority++);
+            planContent.getChildren().add(card);
+        }
+        
+        if(!hasItems) {
+            Label done = new Label("✓ All subjects above 60% or no data!");
+            done.setFont(Font.font("System", FontWeight.BOLD, 18));
+            done.setTextFill(Color.web("#27ae60"));
+            done.setPadding(new Insets(50));
+            planContent.getChildren().add(done);
+        }
+        
+    } catch (Exception e) {
+        Label err = new Label("Error: " + e.getMessage());
+        err.setTextFill(Color.BLACK);
+        planContent.getChildren().add(err);
+    }
+}
+
+private VBox createPriorityCard(int subjectId, String subjectName, double avgScore, int topicCount, int priorityNum) {
+    String color = avgScore < 40 ? "#e74c3c" : "#f39c12";
+    boolean isCritical = avgScore < 30;
+    
+    VBox card = new VBox(10);
+    card.setPadding(new Insets(15));
+    card.setStyle("-fx-background-color: white; " +
+                  "-fx-border-color: " + color + "; " +
+                  "-fx-border-width: 2px; " +
+                  "-fx-border-radius: 8px; " +
+                  "-fx-background-radius: 8px;");
+    
+    // Header row
+    HBox header = new HBox(10);
+    header.setAlignment(Pos.CENTER_LEFT);
+    
+    Label priorityLbl = new Label("#" + priorityNum);
+    priorityLbl.setFont(Font.font("System", FontWeight.BOLD, 16));
+    priorityLbl.setTextFill(Color.web(color));
+    
+    Label nameLbl = new Label(subjectName);
+    nameLbl.setFont(Font.font("System", FontWeight.BOLD, 16));
+    nameLbl.setTextFill(Color.BLACK);
+    
+    Region spacer = new Region();
+    HBox.setHgrow(spacer, Priority.ALWAYS);
+    
+    Label scoreLbl = new Label(String.format("%.0f%%", avgScore));
+    scoreLbl.setFont(Font.font("System", FontWeight.BOLD, 20));
+    scoreLbl.setTextFill(Color.web(color));
+    
+    header.getChildren().addAll(priorityLbl, nameLbl, spacer, scoreLbl);
+    
+    // Info
+    Label infoLbl = new Label(topicCount + " topics recorded");
+    infoLbl.setTextFill(Color.BLACK);
+    infoLbl.setFont(Font.font(12));
+    
+    // MESSAGE & TIME TABLE BASED ON SCORE
+    VBox scheduleBox = new VBox(8);
+    scheduleBox.setPadding(new Insets(10));
+    scheduleBox.setStyle("-fx-background-color: " + (isCritical ? "#ffebee" : "#fff3e0") + "; " +
+                        "-fx-background-radius: 5px;");
+    
+    if (isCritical) {
+        // Below 30% - Critical Alert
+        Label alertLbl = new Label("⚠️ NEEDS IMMEDIATE ATTENTION!");
+        alertLbl.setFont(Font.font("System", FontWeight.BOLD, 13));
+        alertLbl.setTextFill(Color.web("#c62828"));
+        
+        Label subtext = new Label("Score critically low. Intensive study required.");
+        subtext.setTextFill(Color.BLACK);
+        subtext.setFont(Font.font(11));
+        
+        scheduleBox.getChildren().addAll(alertLbl, subtext);
+    }
+    
+    // Time Table (for both ranges, different intensity)
+    Label scheduleHeader = new Label(isCritical ? "📅 Intensive Schedule:" : "📅 Study Schedule:");
+    scheduleHeader.setFont(Font.font("System", FontWeight.BOLD, 12));
+    scheduleHeader.setTextFill(Color.BLACK);
+    
+    VBox timeTable = new VBox(5);
+    timeTable.setPadding(new Insets(0, 0, 0, 10));
+    
+    if (isCritical) {
+        // Below 30%: Intensive 3 hours daily
+        Label[] items = {
+            new Label("• Day 1-2: Concept review & basics (3 hrs)"),
+            new Label("• Day 3-4: Practice problems (3 hrs)"),
+            new Label("• Day 5: Mock test & revision (2 hrs)"),
+            new Label("• Target: Reach 50% within 5 days")
+        };
+        for (Label l : items) {
+            l.setTextFill(Color.BLACK);
+            l.setFont(Font.font(11));
+            timeTable.getChildren().add(l);
+        }
+    } else {
+        // 30-60%: Moderate 1.5 hours daily
+        Label[] items = {
+            new Label("• Day 1: Weak topic review (1.5 hrs)"),
+            new Label("• Day 2: Practice questions (1.5 hrs)"),
+            new Label("• Day 3: Past paper practice (1.5 hrs)"),
+            new Label("• Target: Reach 70% within 3 days")
+        };
+        for (Label l : items) {
+            l.setTextFill(Color.BLACK);
+            l.setFont(Font.font(11));
+            timeTable.getChildren().add(l);
+        }
+    }
+    
+    scheduleBox.getChildren().addAll(scheduleHeader, timeTable);
+    
+    // Complete button
+    Button completeBtn = new Button("✓ Complete");
+    completeBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; " +
+                        "-fx-font-weight: bold; -fx-padding: 8 20; " +
+                        "-fx-background-radius: 15px;");
+    
+    completeBtn.setOnAction(e -> {
+        markSubjectAsComplete(subjectId);
+        
+        FadeTransition ft = new FadeTransition(Duration.millis(200), card);
+        ft.setToValue(0);
+        ft.setOnFinished(ev -> {
+            planContent.getChildren().remove(card);
+            
+            int[] newCounts = getPlanCounts();
+            remainingCountLbl.setText(String.valueOf(newCounts[0]));
+            completedCountLbl.setText(String.valueOf(newCounts[1]));
+            
+            if(planContent.getChildren().isEmpty()) {
+                Label allDone = new Label("✓ All caught up!");
+                allDone.setFont(Font.font("System", FontWeight.BOLD, 18));
+                allDone.setTextFill(Color.web("#27ae60"));
+                allDone.setPadding(new Insets(50));
+                planContent.getChildren().add(allDone);
+            }
+        });
+        ft.play();
+    });
+    
+    HBox buttonBox = new HBox();
+    buttonBox.setAlignment(Pos.CENTER_RIGHT);
+    buttonBox.getChildren().add(completeBtn);
+    
+    // Add all to card: header, info, schedule (message + timetable), button
+    card.getChildren().addAll(header, infoLbl, scheduleBox, buttonBox);
+    return card;
+}
+
+private void markSubjectAsComplete(int subjectId) {
+    try {
+        Connection con = DBConnection.getConnection();
+        // Option 1: Boost all scores to 100
+        PreparedStatement ps = con.prepareStatement(
+            "UPDATE performance SET score = 100 WHERE subject_id = ? AND student_id = ?"
+        );
+        ps.setInt(1, subjectId);
+        ps.setInt(2, currentStudent.getId());
+        ps.executeUpdate();
+        
+        // Option 2: Or insert into completion tracking table if you prefer
+        // Keep old marks but track completion separately
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+private int[] getPlanCounts() {
+    int[] counts = new int[2]; // [remaining, completed]
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        
+        // Count remaining (<60%)
+        String remainingSql = "SELECT COUNT(DISTINCT s.subject_id) as cnt " +
+                             "FROM subjects s " +
+                             "JOIN performance p ON s.subject_id = p.subject_id AND p.student_id = ? " +
+                             "WHERE p.score < 60";
+        
+        PreparedStatement ps = con.prepareStatement(remainingSql);
+        ps.setInt(1, currentStudent.getId());
+        ResultSet rs = ps.executeQuery();
+        if(rs.next()) counts[0] = rs.getInt("cnt");
+        
+        // Count completed (>=60% or marked complete) - assuming completed means >=60
+        String completedSql = "SELECT COUNT(DISTINCT s.subject_id) as cnt " +
+                             "FROM subjects s " +
+                             "JOIN performance p ON s.subject_id = p.subject_id AND p.student_id = ? " +
+                             "WHERE p.score >= 60";
+        
+        ps = con.prepareStatement(completedSql);
+        ps.setInt(1, currentStudent.getId());
+        rs = ps.executeQuery();
+        if(rs.next()) counts[1] = rs.getInt("cnt");
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return counts;
+}
+
+private void refreshSimplePlan() {
+    int[] counts = getPlanCounts();
+    remainingCountLbl.setText(String.valueOf(counts[0]));
+    completedCountLbl.setText(String.valueOf(counts[1]));
+    loadPrioritySubjects();
+}
+
+
+
     
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
