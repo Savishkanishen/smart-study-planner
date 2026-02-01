@@ -860,14 +860,13 @@ private void showMySubjectsList() {
 private void showAddPerformanceDialog() {
     Dialog<ButtonType> dialog = new Dialog<>();
     dialog.setTitle("Add Your Performance");
-    dialog.setHeaderText("Track Your Marks - Subject or Topic Level");
+    dialog.setHeaderText("Track Marks - Full Syllabus or Specific Topic");
     dialog.getDialogPane().setPrefWidth(550);
     
     ButtonType addBtnType = new ButtonType("Add Score", ButtonBar.ButtonData.OK_DONE);
-    ButtonType viewWeakBtnType = new ButtonType("View My Weak Points", ButtonBar.ButtonData.LEFT);
+    ButtonType viewWeakBtnType = new ButtonType("View Analysis", ButtonBar.ButtonData.LEFT);
     dialog.getDialogPane().getButtonTypes().addAll(viewWeakBtnType, addBtnType, ButtonType.CANCEL);
     
-    // Main content
     VBox content = new VBox(20);
     content.setPadding(new Insets(20));
     content.setStyle("-fx-background-color: #f8f9fa;");
@@ -886,7 +885,7 @@ private void showAddPerformanceDialog() {
     
     typeBox.getChildren().addAll(subjectRadio, topicRadio);
     
-    // Subject Selection - Load topics ALWAYS when subject changes
+    // Subject Selection
     ComboBox<String> subjectCombo = new ComboBox<>();
     subjectCombo.setPromptText("Select Subject");
     subjectCombo.setMaxWidth(Double.MAX_VALUE);
@@ -896,7 +895,7 @@ private void showAddPerformanceDialog() {
     ComboBox<String> topicCombo = new ComboBox<>();
     topicCombo.setPromptText("Select Topic");
     topicCombo.setMaxWidth(Double.MAX_VALUE);
-    topicCombo.setDisable(true); // Disabled by default
+    topicCombo.setDisable(true); // Disabled by default for Subject mode
     topicCombo.setStyle("-fx-padding: 10; -fx-font-size: 14px;");
     
     // Load subjects
@@ -906,11 +905,9 @@ private void showAddPerformanceDialog() {
         while(rs.next()) {
             subjectCombo.getItems().add(rs.getString("subject_name"));
         }
-    } catch (Exception e) {
-        showAlert("Error loading subjects: " + e.getMessage());
-    }
+    } catch (Exception e) {}
     
-    // FIX: Load topics whenever subject changes (regardless of radio button)
+    // Load topics when subject changes
     subjectCombo.setOnAction(e -> {
         String selectedSubject = subjectCombo.getValue();
         if(selectedSubject == null) {
@@ -924,7 +921,7 @@ private void showAddPerformanceDialog() {
             PreparedStatement ps = con.prepareStatement(
                 "SELECT s.topic_name FROM syllabus s " +
                 "JOIN subjects sub ON s.subject_id = sub.subject_id " +
-                "WHERE sub.subject_name = ?"
+                "WHERE sub.subject_name = ? AND s.topic_name NOT LIKE '📊 Overall Score%'" // Exclude dummy topics from list
             );
             ps.setString(1, selectedSubject);
             ResultSet rs = ps.executeQuery();
@@ -937,97 +934,65 @@ private void showAddPerformanceDialog() {
         }
     });
     
-    // NO TOPICS WARNING LABEL (Hidden by default)
-    Label noTopicsLabel = new Label("⚠️ No topics found! Go to '🌳 Syllabus' to add topics first.");
-    noTopicsLabel.setTextFill(Color.web("#e74c3c"));
-    noTopicsLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
-    noTopicsLabel.setVisible(false);
-    
-    // Toggle visibility based on selection
+    // Toggle between Subject and Topic mode
     scoreTypeGroup.selectedToggleProperty().addListener((obs, old, newVal) -> {
         if(newVal == subjectRadio) {
-            // Entire Subject mode: Disable topic dropdown
+            // Subject mode: Disable topic dropdown
             topicCombo.setDisable(true);
             topicCombo.setValue(null);
-            noTopicsLabel.setVisible(false);
             topicCombo.setPromptText("Select Topic");
         } else {
-            // Specific Topic mode: Enable dropdown
+            // Topic mode: Enable dropdown and load topics
             topicCombo.setDisable(false);
-            
-            // FIX: Reload topics if subject already selected
             if(subjectCombo.getValue() != null && topicCombo.getItems().isEmpty()) {
                 subjectCombo.fireEvent(new ActionEvent()); // Force reload
-            }
-            
-            // Update label based on whether topics exist
-            if(topicCombo.getItems().isEmpty()) {
-                noTopicsLabel.setVisible(true);
-                topicCombo.setPromptText("No topics available");
-            } else {
-                noTopicsLabel.setVisible(false);
-                topicCombo.setPromptText("Select Topic");
             }
         }
     });
     
-    // Score Input with Slider
+    // Score Input
     VBox scoreBox = new VBox(10);
     Slider scoreSlider = new Slider(0, 100, 50);
     scoreSlider.setShowTickLabels(true);
     scoreSlider.setShowTickMarks(true);
     scoreSlider.setMajorTickUnit(10);
-    scoreSlider.setBlockIncrement(5);
     
     HBox scoreDisplay = new HBox(10);
     scoreDisplay.setAlignment(Pos.CENTER);
-    
     Label scoreLabel = new Label("50");
     scoreLabel.setFont(Font.font("System", FontWeight.BOLD, 48));
+    Label percentLabel = new Label("%");
     scoreLabel.setTextFill(Color.web("#667eea"));
     
-    Label percentLabel = new Label("%");
-    percentLabel.setFont(Font.font("System", 24));
-    percentLabel.setTextFill(Color.web("#7f8c8d"));
-    
-    // Color coding based on score
     scoreSlider.valueProperty().addListener((obs, old, val) -> {
         int score = val.intValue();
         scoreLabel.setText(String.valueOf(score));
-        
-        if(score < 50) {
-            scoreLabel.setTextFill(Color.web("#e74c3c"));
-        } else if(score < 70) {
-            scoreLabel.setTextFill(Color.web("#f39c12"));
-        } else {
-            scoreLabel.setTextFill(Color.web("#27ae60"));
-        }
+        if(score < 50) scoreLabel.setTextFill(Color.web("#e74c3c"));
+        else if(score < 70) scoreLabel.setTextFill(Color.web("#f39c12"));
+        else scoreLabel.setTextFill(Color.web("#27ae60"));
     });
     
     scoreDisplay.getChildren().addAll(scoreLabel, percentLabel);
     scoreBox.getChildren().addAll(new Label("Your Score:"), scoreSlider, scoreDisplay);
     
-    // Add all to content
     content.getChildren().addAll(
         new Label("Score For:"), typeBox,
         new Label("Subject:"), subjectCombo,
-        new Label("Topic:"), topicCombo, 
-        noTopicsLabel,
+        new Label("Topic:"), topicCombo,
         scoreBox
     );
     
     dialog.getDialogPane().setContent(content);
     
-    // Handle View Weak Points button
-    final Button viewWeakBtn = (Button) dialog.getDialogPane().lookupButton(viewWeakBtnType);
-    viewWeakBtn.addEventFilter(ActionEvent.ACTION, event -> {
-        event.consume();
-        showWeakPointsSummary();
+    // View Analysis button
+    ((Button)dialog.getDialogPane().lookupButton(viewWeakBtnType)).addEventFilter(ActionEvent.ACTION, e -> {
+        e.consume();
+        showSubjectAnalysis();
     });
     
-    // Handle Add Score button
-    dialog.setResultConverter(dialogButton -> {
-        if(dialogButton == addBtnType) {
+    // Add Score button
+    dialog.setResultConverter(btn -> {
+        if(btn == addBtnType) {
             try {
                 String subject = subjectCombo.getValue();
                 String topic = topicCombo.getValue();
@@ -1039,55 +1004,97 @@ private void showAddPerformanceDialog() {
                 }
                 
                 Connection con = DBConnection.getConnection();
-                int subjId = 0;
+                
+                // Get subject_id
                 PreparedStatement ps = con.prepareStatement("SELECT subject_id FROM subjects WHERE subject_name=?");
                 ps.setString(1, subject);
                 ResultSet rs = ps.executeQuery();
+                int subjId = 0;
                 if(rs.next()) subjId = rs.getInt(1);
                 
+                
+                //full score for subjects 
+                
                 if(subjectRadio.isSelected()) {
-                    // Subject-level score (Full Syllabus)
-                    ps = con.prepareStatement(
-                        "INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,NULL,?) ON DUPLICATE KEY UPDATE score=?"
-                    );
-                    ps.setInt(1, currentStudent.getId());
-                    ps.setInt(2, subjId);
-                    ps.setInt(3, score);
-                    ps.setInt(4, score);
-                    ps.executeUpdate();
-                    showAlert("✅ Saved subject score: " + subject + " = " + score + "%");
-                } else {
-                    // Topic-level score
+    // ========== FULL SYLLABUS (SUBJECT LEVEL) ==========
+    // Check if dummy topic exists
+    ps = con.prepareStatement(
+        "SELECT topic_id FROM syllabus WHERE subject_id=? AND topic_name='Overall Score'"
+    );
+    ps.setInt(1, subjId);
+    rs = ps.executeQuery();
+    
+    int overallTopicId;
+    if(rs.next()) {
+        overallTopicId = rs.getInt("topic_id");
+    } else {
+        // FIX: Use NULL for parent_topic_id (not 0!)
+        ps = con.prepareStatement(
+            "INSERT INTO syllabus(subject_id, parent_topic_id, topic_name) VALUES(?, NULL, 'Overall Score')",
+            Statement.RETURN_GENERATED_KEYS
+        );
+        ps.setInt(1, subjId);
+        ps.executeUpdate();
+        
+        ResultSet genKeys = ps.getGeneratedKeys();
+        if(genKeys.next()) {
+            overallTopicId = genKeys.getInt(1);
+        } else {
+            throw new SQLException("Failed to create overall score topic");
+        }
+    }
+    
+    // Save using the dummy topic_id
+    ps = con.prepareStatement(
+        "INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?"
+    );
+    ps.setInt(1, currentStudent.getId());
+    ps.setInt(2, subjId);
+    ps.setInt(3, overallTopicId);
+    ps.setInt(4, score);
+    ps.setInt(5, score);
+    ps.executeUpdate();
+    
+    showAlert("✅ Saved Full Syllabus score: " + subject + " = " + score + "%");
+    
+
+} else {
+                    // ========== SPECIFIC TOPIC ==========
                     if(topic == null || topic.isEmpty()) {
-                        showAlert("Please select a topic, or switch to 'Entire Subject' mode!");
+                        showAlert("Please select a specific topic, or switch to 'Full Syllabus' mode!");
                         return null;
                     }
                     
-                    int topicId = 0;
+                    // Get topic_id
                     ps = con.prepareStatement("SELECT topic_id FROM syllabus WHERE topic_name=? AND subject_id=?");
                     ps.setString(1, topic);
                     ps.setInt(2, subjId);
                     rs = ps.executeQuery();
-                    if(rs.next()) topicId = rs.getInt(1);
                     
-                    ps = con.prepareStatement(
-                        "INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?"
-                    );
-                    ps.setInt(1, currentStudent.getId());
-                    ps.setInt(2, subjId);
-                    ps.setInt(3, topicId);
-                    ps.setInt(4, score);
-                    ps.setInt(5, score);
-                    ps.executeUpdate();
-                    showAlert("✅ Saved topic score: " + topic + " = " + score + "%");
-                    
-                    if(score < 60) showWeakPointAlert(topic, score);
+                    if(rs.next()) {
+                        int topicId = rs.getInt("topic_id");
+                        
+                        ps = con.prepareStatement(
+                            "INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?"
+                        );
+                        ps.setInt(1, currentStudent.getId());
+                        ps.setInt(2, subjId);
+                        ps.setInt(3, topicId);
+                        ps.setInt(4, score);
+                        ps.setInt(5, score);
+                        ps.executeUpdate();
+                        
+                        showAlert("✅ Saved Topic score: " + topic + " = " + score + "%");
+                        
+                        if(score < 60) showWeakPointAlert(topic, score);
+                    }
                 }
                 
                 planner.loadPerformance(currentStudent.getId());
                 
             } catch (Exception e) {
                 showAlert("Error: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         return null;
