@@ -29,6 +29,11 @@ public class StudyToolApp extends Application {
     private SyllabusTree tree = new SyllabusTree();
     private RevisionPlanner planner = new RevisionPlanner();
     
+    
+    private Stage analysisStage;
+private VBox analysisContentBox;
+private Label lastUpdatedLabel;
+    
     @Override
     public void start(Stage primaryStage) {
          System.out.println("Starting application...");
@@ -1026,36 +1031,38 @@ private void showAddPerformanceDialog() {
                 
                 //full score for subjects 
                 
-                if(subjectRadio.isSelected()) {
+               if(subjectRadio.isSelected()) {
     // ========== FULL SYLLABUS (SUBJECT LEVEL) ==========
-    // Check if dummy topic exists
+    // Check if subject-level topic exists (using subject name instead of "Overall Score")
     ps = con.prepareStatement(
-        "SELECT topic_id FROM syllabus WHERE subject_id=? AND topic_name='Overall Score'"
+        "SELECT topic_id FROM syllabus WHERE subject_id=? AND topic_name=?"
     );
     ps.setInt(1, subjId);
+    ps.setString(2, subject); // Use actual subject name, not "Overall Score"
     rs = ps.executeQuery();
     
     int overallTopicId;
     if(rs.next()) {
         overallTopicId = rs.getInt("topic_id");
     } else {
-        // FIX: Use NULL for parent_topic_id (not 0!)
+        // Create topic with SUBJECT NAME (not "Overall Score")
         ps = con.prepareStatement(
-            "INSERT INTO syllabus(subject_id, parent_topic_id, topic_name) VALUES(?, NULL, 'Overall Score')",
+            "INSERT INTO syllabus(subject_id, parent_topic_id, topic_name) VALUES(?, NULL, ?)",
             Statement.RETURN_GENERATED_KEYS
         );
         ps.setInt(1, subjId);
+        ps.setString(2, subject); // Use subject name here
         ps.executeUpdate();
         
         ResultSet genKeys = ps.getGeneratedKeys();
         if(genKeys.next()) {
             overallTopicId = genKeys.getInt(1);
         } else {
-            throw new SQLException("Failed to create overall score topic");
+            throw new SQLException("Failed to create subject score topic");
         }
     }
     
-    // Save using the dummy topic_id
+    // Save using this topic_id
     ps = con.prepareStatement(
         "INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?"
     );
@@ -1067,7 +1074,7 @@ private void showAddPerformanceDialog() {
     ps.executeUpdate();
     
     showAlert("✅ Saved Full Syllabus score: " + subject + " = " + score + "%");
-    
+
 
 } else {
                     // ========== SPECIFIC TOPIC ==========
@@ -1141,115 +1148,7 @@ private void refreshRevisionView() {
     }
 }
 
-private void showSubjectAnalysis() {
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("Performance Analysis");
-    alert.setHeaderText("📊 Subject & Topic Weak Points");
-    
-    VBox content = new VBox(15);
-    content.setPadding(new Insets(10));
-    
-    try {
-        Connection con = DBConnection.getConnection();
-        
-        // Get Subject-Level Scores (Full Syllabus marks)
-        Label subjTitle = new Label("🎓 Subject Level Scores (Full Syllabus):");
-        subjTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
-        content.getChildren().add(subjTitle);
-        
-        PreparedStatement ps = con.prepareStatement(
-            "SELECT sub.subject_name, p.score FROM performance p " +
-            "JOIN subjects sub ON p.subject_id = sub.subject_id " +
-            "WHERE p.student_id = ? AND p.topic_id IS NULL " +
-            "ORDER BY p.score ASC"
-        );
-        ps.setInt(1, currentStudent.getId());
-        ResultSet rs = ps.executeQuery();
-        
-        boolean hasSubjectScores = false;
-        while(rs.next()) {
-            hasSubjectScores = true;
-            String name = rs.getString("subject_name");
-            int score = rs.getInt("score");
-            
-            HBox row = new HBox(10);
-            row.setAlignment(Pos.CENTER_LEFT);
-            
-            String emoji = score < 60 ? "🔴" : (score < 75 ? "🟡" : "🟢");
-            Label lbl = new Label(emoji + " " + name + ": " + score + "%");
-            lbl.setFont(Font.font("System", 14));
-            lbl.setTextFill(score < 60 ? Color.web("#e74c3c") : Color.web("#2c3e50"));
-            
-            row.getChildren().add(lbl);
-            content.getChildren().add(row);
-        }
-        
-        if(!hasSubjectScores) {
-            content.getChildren().add(new Label("No full-subject scores yet. Use 'Entire Subject' option to add overall marks."));
-        }
-        
-        // Separator
-        content.getChildren().add(new Label(""));
-        
-        // Get Topic-Level Weak Points (detailed)
-        Label topicTitle = new Label("📝 Topic Level Weak Points:");
-        topicTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
-        content.getChildren().add(topicTitle);
-        
-        ps = con.prepareStatement(
-            "SELECT sub.subject_name, s.topic_name, p.score FROM performance p " +
-            "JOIN syllabus s ON p.topic_id = s.topic_id " +
-            "JOIN subjects sub ON s.subject_id = sub.subject_id " +
-            "WHERE p.student_id = ? AND p.score < 70 " +
-            "ORDER BY p.score ASC LIMIT 10"
-        );
-        ps.setInt(1, currentStudent.getId());
-        rs = ps.executeQuery();
-        
-        while(rs.next()) {
-            HBox row = new HBox(10);
-            row.setAlignment(Pos.CENTER_LEFT);
-            
-            Label lbl = new Label("⚠️ " + rs.getString("subject_name") + " > " + 
-                                rs.getString("topic_name") + ": " + rs.getInt("score") + "%");
-            lbl.setTextFill(Color.web("#e74c3c"));
-            row.getChildren().add(lbl);
-            content.getChildren().add(row);
-        }
-        
-        // Calculate Subject Averages from Topics
-        content.getChildren().add(new Label(""));
-        Label avgTitle = new Label("📈 Calculated Averages (from Topic Scores):");
-        avgTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
-        content.getChildren().add(avgTitle);
-        
-        ps = con.prepareStatement(
-            "SELECT sub.subject_name, AVG(p.score) as avg_score, COUNT(*) as count " +
-            "FROM performance p JOIN syllabus s ON p.topic_id = s.topic_id " +
-            "JOIN subjects sub ON s.subject_id = sub.subject_id " +
-            "WHERE p.student_id = ? GROUP BY sub.subject_id HAVING count > 0"
-        );
-        ps.setInt(1, currentStudent.getId());
-        rs = ps.executeQuery();
-        
-        while(rs.next()) {
-            int avg = (int)rs.getDouble("avg_score");
-            HBox row = new HBox(10);
-            
-            Label lbl = new Label((avg < 60 ? "🔴" : "📊") + " " + rs.getString("subject_name") + 
-                                ": " + avg + "% (" + rs.getInt("count") + " topics)");
-            lbl.setTextFill(avg < 60 ? Color.web("#e74c3c") : Color.web("#2c3e50"));
-            row.getChildren().add(lbl);
-            content.getChildren().add(row);
-        }
-        
-    } catch (Exception e) {
-        content.getChildren().add(new Label("Error: " + e.getMessage()));
-    }
-    
-    alert.getDialogPane().setContent(content);
-    alert.showAndWait();
-}
+
     
 
 
@@ -1393,11 +1292,211 @@ private void showWeakPointsSummary() {
         showAlert("Error loading weak points: " + e.getMessage());
     }
 }
+
+private void showSubjectAnalysis() {
+    // If window already open, just refresh and bring to front
+    if (analysisStage != null && analysisStage.isShowing()) {
+        refreshAnalysisContent();
+        analysisStage.toFront();
+        return;
+    }
+    
+    // Create new non-modal window
+    analysisStage = new Stage();
+    analysisStage.setTitle("📊 Real-time Performance Analysis");
+    analysisStage.setWidth(650);
+    analysisStage.setHeight(600);
+    
+    VBox root = new VBox(15);
+    root.setPadding(new Insets(20));
+    root.setStyle("-fx-background-color: #f8f9fa;");
+    
+    // Header with refresh button and timestamp
+    HBox header = new HBox(15);
+    header.setAlignment(Pos.CENTER_LEFT);
+    
+    Label title = new Label("Performance Analysis");
+    title.setFont(Font.font("System", FontWeight.BOLD, 20));
+    title.setTextFill(Color.web("#2c3e50"));
+    
+    Region spacer = new Region();
+    HBox.setHgrow(spacer, Priority.ALWAYS);
+    
+    lastUpdatedLabel = new Label("Updated: Just now");
+    lastUpdatedLabel.setTextFill(Color.web("#7f8c8d"));
+    lastUpdatedLabel.setFont(Font.font("System", 11));
+    
+    Button refreshBtn = new Button("🔄 Refresh");
+    refreshBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 5 15;");
+    refreshBtn.setOnAction(e -> refreshAnalysisContent());
+    
+    header.getChildren().addAll(title, spacer, lastUpdatedLabel, refreshBtn);
+    
+    // Content box that will be refreshed
+    analysisContentBox = new VBox(15);
+    analysisContentBox.setPadding(new Insets(10));
+    
+    ScrollPane scrollPane = new ScrollPane(analysisContentBox);
+    scrollPane.setFitToWidth(true);
+    scrollPane.setStyle("-fx-background: #f8f9fa;");
+    
+    root.getChildren().addAll(header, scrollPane);
+    
+    Scene scene = new Scene(root);
+    analysisStage.setScene(scene);
+    analysisStage.show();
+    
+    // Initial load
+    refreshAnalysisContent();
+}
+
+private void refreshAnalysisContent() {
+    if (analysisContentBox == null) return;
+    
+    analysisContentBox.getChildren().clear();
+    
+    try {
+        Connection con = DBConnection.getConnection();
+        
+        // Subject-Level Scores
+        Label subjTitle = new Label("🎓 Subject Level Scores (Full Syllabus):");
+        subjTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
+        subjTitle.setTextFill(Color.web("#2c3e50"));
+        analysisContentBox.getChildren().add(subjTitle);
+        
+        PreparedStatement ps = con.prepareStatement(
+            "SELECT sub.subject_name, p.score FROM performance p " +
+            "JOIN syllabus s ON p.topic_id = s.topic_id " +
+            "JOIN subjects sub ON p.subject_id = sub.subject_id " +
+            "WHERE p.student_id = ? AND s.topic_name = sub.subject_name " +
+            "ORDER BY p.score ASC"
+        );
+        ps.setInt(1, currentStudent.getId());
+        ResultSet rs = ps.executeQuery();
+        
+        boolean hasSubjectScores = false;
+        while(rs.next()) {
+            hasSubjectScores = true;
+            String name = rs.getString("subject_name");
+            int score = rs.getInt("score");
+            
+            HBox row = new HBox(10);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setPadding(new Insets(8, 12, 8, 12));
+            row.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+            
+            String emoji = score < 60 ? "🔴" : (score < 75 ? "🟡" : "🟢");
+            Label lbl = new Label(emoji + " " + name + ": " + score + "%");
+            lbl.setFont(Font.font("System", 14));
+            lbl.setTextFill(score < 60 ? Color.web("#e74c3c") : Color.web("#2c3e50"));
+            
+            // Progress bar
+            ProgressBar progress = new ProgressBar(score / 100.0);
+            progress.setPrefWidth(150);
+            progress.setStyle("-fx-accent: " + (score < 60 ? "#e74c3c" : (score < 75 ? "#f39c12" : "#27ae60")) + ";");
+            
+            row.getChildren().addAll(lbl, progress);
+            analysisContentBox.getChildren().add(row);
+        }
+        
+        if(!hasSubjectScores) {
+            analysisContentBox.getChildren().add(new Label("No full-subject scores yet. Use 'Entire Subject' option to add overall marks."));
+        }
+        
+        analysisContentBox.getChildren().add(new Label("")); // Spacer
+        
+        // Topic-Level Weak Points
+        Label topicTitle = new Label("📝 Topic Level Weak Points (< 70%):");
+        topicTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
+        topicTitle.setTextFill(Color.web("#2c3e50"));
+        analysisContentBox.getChildren().add(topicTitle);
+        
+        ps = con.prepareStatement(
+            "SELECT sub.subject_name, s.topic_name, p.score FROM performance p " +
+            "JOIN syllabus s ON p.topic_id = s.topic_id " +
+            "JOIN subjects sub ON s.subject_id = sub.subject_id " +
+            "WHERE p.student_id = ? AND p.score < 70 AND s.topic_name != sub.subject_name " +
+            "ORDER BY p.score ASC LIMIT 10"
+        );
+        ps.setInt(1, currentStudent.getId());
+        rs = ps.executeQuery();
+        
+        boolean hasWeakTopics = false;
+        while(rs.next()) {
+            hasWeakTopics = true;
+            HBox row = new HBox(10);
+            row.setAlignment(Pos.CENTER_LEFT);
+            row.setPadding(new Insets(8, 12, 8, 12));
+            row.setStyle("-fx-background-color: white; -fx-background-radius: 5;");
+            
+            Label lbl = new Label("⚠️ " + rs.getString("subject_name") + " > " + 
+                                rs.getString("topic_name") + ": " + rs.getInt("score") + "%");
+            lbl.setTextFill(Color.web("#e74c3c"));
+            row.getChildren().add(lbl);
+            analysisContentBox.getChildren().add(row);
+        }
+        
+        if(!hasWeakTopics) {
+            analysisContentBox.getChildren().add(new Label("✅ No weak topics! All specific topics are above 70%"));
+        }
+        
+        analysisContentBox.getChildren().add(new Label("")); // Spacer
+        
+        // Calculated Averages
+        Label avgTitle = new Label("📈 Calculated Averages (from Topic Scores):");
+        avgTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
+        topicTitle.setTextFill(Color.web("#2c3e50"));
+        analysisContentBox.getChildren().add(avgTitle);
+        
+        ps = con.prepareStatement(
+            "SELECT sub.subject_name, AVG(p.score) as avg_score, COUNT(*) as count " +
+            "FROM performance p JOIN syllabus s ON p.topic_id = s.topic_id " +
+            "JOIN subjects sub ON s.subject_id = sub.subject_id " +
+            "WHERE p.student_id = ? AND s.topic_name != sub.subject_name " +
+            "GROUP BY sub.subject_id HAVING count > 0"
+        );
+        ps.setInt(1, currentStudent.getId());
+        rs = ps.executeQuery();
+        
+        boolean hasAverages = false;
+        while(rs.next()) {
+            hasAverages = true;
+            int avg = (int)rs.getDouble("avg_score");
+            HBox row = new HBox(10);
+            row.setAlignment(Pos.CENTER_LEFT);
+            
+            Label lbl = new Label((avg < 60 ? "🔴" : "📊") + " " + rs.getString("subject_name") + 
+                                ": " + avg + "% (" + rs.getInt("count") + " topics)");
+            lbl.setTextFill(avg < 60 ? Color.web("#e74c3c") : Color.web("#2c3e50"));
+            row.getChildren().add(lbl);
+            analysisContentBox.getChildren().add(row);
+        }
+        
+        if(!hasAverages) {
+            analysisContentBox.getChildren().add(new Label("No topic scores available for average calculation."));
+        }
+        
+        // Update timestamp
+        if(lastUpdatedLabel != null) {
+            lastUpdatedLabel.setText("Updated: " + java.time.LocalTime.now().withSecond(0).withNano(0).toString());
+        }
+        
+    } catch (Exception e) {
+        analysisContentBox.getChildren().add(new Label("Error loading data: " + e.getMessage()));
+        e.printStackTrace();
+    }
+}
     
     private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setContentText(msg);
         alert.showAndWait();
+        // After: showAlert("✅ Saved Full Syllabus score: " + subject + " = " + score + "%");
+// ADD THIS LINE:
+Platform.runLater(() -> refreshAnalysisContent());
+
+// And after the topic-specific save (around line 900), add:
+Platform.runLater(() -> refreshAnalysisContent());
     }
     
     public static void main(String[] args) {
