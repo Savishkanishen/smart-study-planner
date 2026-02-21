@@ -75,7 +75,7 @@ public class StudyToolApp extends Application {
         root.setPadding(new Insets(40));
         root.setStyle("-fx-background-color: linear-gradient(to bottom right, #e0eafc, #cfdef3);");
 
-        Label title = new Label("📚 Smart Study Tool");
+        Label title = new Label("Smart Study Tool");
         title.setFont(Font.font("System", FontWeight.BOLD, 36));
         title.setTextFill(Color.web("#1e293b"));
 
@@ -173,12 +173,12 @@ public class StudyToolApp extends Application {
         regBtn.setOnAction(e -> {
             String email = emailField.getText().trim();
             if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                msgLbl.setText("⚠️ Please enter a valid email address!");
+                msgLbl.setText("Please enter a valid email address!");
                 msgLbl.setTextFill(Color.web("#ef4444"));
                 return;
             }
             if (nameField.getText().trim().isEmpty() || passField.getText().trim().isEmpty()) {
-                msgLbl.setText("⚠️ All fields are required!");
+                msgLbl.setText("All fields are required!");
                 msgLbl.setTextFill(Color.web("#ef4444"));
                 return;
             }
@@ -202,6 +202,7 @@ public class StudyToolApp extends Application {
 
         formBox.getChildren().addAll(
                 new Label("Create Account") {{ setFont(Font.font("System", FontWeight.BOLD, 24)); setTextFill(Color.web("#0f172a")); }},
+                new Label("Please create here a new account") {{ setTextFill(Color.web("#64748b")); }},
                 nameField, emailField, passField, regBtn, backBtn, msgLbl
         );
 
