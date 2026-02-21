@@ -26,6 +26,8 @@ import java.util.logging.Logger;
 import javafx.event.ActionEvent;
 import javafx.scene.input.MouseButton;
 
+
+
 public class StudyToolApp extends Application {
     private Stage primaryStage;
     private Student currentStudent;
@@ -42,7 +44,15 @@ public class StudyToolApp extends Application {
     private Stage analysisStage;
     private VBox analysisContentBox;
     private Label lastUpdatedLabel;
+    
+    
+     private static final String PRIMARY_COLOR = "#6366f1";
+    private static final String SECONDARY_COLOR = "#8b5cf6";
+    private static final String ACCENT_COLOR = "#ec4899";
+    private static final String DARK_BG = "#0f172a";
 
+    
+    
     // Helper method to keep window ratios perfect
     private void switchScene(Region newRoot) {
         if (primaryStage.getScene() == null) {
@@ -57,6 +67,7 @@ public class StudyToolApp extends Application {
     }
 
     @Override
+       
     public void start(Stage primaryStage) {
         System.out.println("Starting application...");
         this.primaryStage = primaryStage;
@@ -73,12 +84,14 @@ public class StudyToolApp extends Application {
         VBox root = new VBox(20);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(40));
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #e0eafc, #cfdef3);");
+        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #0f172a, #1e1b4b, #312e81);");
+     
 
         Label title = new Label("Smart Study Tool");
         title.setFont(Font.font("System", FontWeight.BOLD, 36));
         title.setTextFill(Color.web("#1e293b"));
-
+        
+         
         VBox formBox = new VBox(20);
         formBox.setAlignment(Pos.CENTER);
         formBox.setPadding(new Insets(40));
@@ -140,7 +153,7 @@ public class StudyToolApp extends Application {
         VBox root = new VBox(20);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(40));
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #e0eafc, #cfdef3);");
+        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #0f172a, #1e1b4b, #312e81);");
 
         VBox formBox = new VBox(15);
         formBox.setAlignment(Pos.CENTER);
@@ -242,11 +255,11 @@ public class StudyToolApp extends Application {
         userLbl.setTextFill(Color.WHITE);
         userLbl.setWrapText(true);
 
-        Button quickAddBtn = createNavButton("➕ Add Score");
-        Button studyPathBtn = createNavButton("📚 Study Path");
-        Button syllabusBtn = createNavButton("🌳 Syllabus");
-        Button revisionBtn = createNavButton("🔥 Revision Plan");
-        Button studyPlanBtn = createNavButton("📋 Study Plan");
+        Button quickAddBtn = createNavButton("Add Score");
+        Button studyPathBtn = createNavButton("Study Path");
+        Button syllabusBtn = createNavButton("Syllabus");
+        Button revisionBtn = createNavButton("Revision Plan");
+        Button studyPlanBtn = createNavButton("Study Plan");
         Button logoutBtn = createNavButton("🚪 Logout");
 
         quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
@@ -390,7 +403,7 @@ public class StudyToolApp extends Application {
             String prereq = prereqCombo.getValue();
 
             if(name.isEmpty()) {
-                status.setText("⚠️ Please enter subject name");
+                status.setText("Please enter subject name");
                 status.setTextFill(Color.web("#ef4444"));
                 return;
             }
@@ -454,7 +467,7 @@ public class StudyToolApp extends Application {
         container.setPadding(new Insets(30));
         container.setStyle("-fx-background-color: #f1f5f9;");
 
-        Button backBtn = new Button("← Back to Dashboard");
+        Button backBtn = new Button("Back to Dashboard");
         backBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748b; -fx-cursor: hand; -fx-font-weight: bold;");
         backBtn.setOnAction(e -> showDashboard());
 
@@ -490,7 +503,7 @@ public class StudyToolApp extends Application {
         contentArea.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 4);");
         VBox.setVgrow(contentArea, Priority.ALWAYS);
 
-        Label defaultMsg = new Label("👆 Select a subject above to view its syllabus topics");
+        Label defaultMsg = new Label("Select a subject above to view its syllabus topics");
         defaultMsg.setFont(Font.font("System", 15));
         defaultMsg.setTextFill(Color.web("#64748b"));
         contentArea.getChildren().add(defaultMsg);
@@ -514,7 +527,7 @@ public class StudyToolApp extends Application {
                     subjTitle.setFont(Font.font("System", FontWeight.BOLD, 22));
                     subjTitle.setTextFill(Color.web("#0f172a"));
 
-                    Button addTopicBtn = new Button("➕ Add Topic to this Subject");
+                    Button addTopicBtn = new Button("Add Topic to this Subject");
                     addTopicBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 6;");
                     addTopicBtn.setOnAction(ev -> showAddTopicDialog(subjId, subject, contentArea));
 
