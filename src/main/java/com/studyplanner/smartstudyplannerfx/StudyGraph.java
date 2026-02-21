@@ -36,7 +36,7 @@ public class StudyGraph {
         container.setPadding(new Insets(20));
         container.setStyle("-fx-background-color: linear-gradient(to bottom right, #f5f7fa, #c3cfe2);");
         
-        Label title = new Label("📚 Recommended Study Path");
+        Label title = new Label("Recommended Study Path");
         title.setFont(Font.font("System", FontWeight.BOLD, 24));
         title.setTextFill(Color.web("#2c3e50"));
         

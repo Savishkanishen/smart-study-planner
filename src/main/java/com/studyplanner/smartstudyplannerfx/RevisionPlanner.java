@@ -88,7 +88,7 @@ public class RevisionPlanner {
             msg.setFont(Font.font("System", FontWeight.BOLD, 24));
             msg.setTextFill(Color.web("#0f172a"));
 
-            Label hint = new Label("Click '➕ Add Score' to enter your marks\nand see your weak points automatically.");
+            Label hint = new Label("Click ' Add Score' to enter your marks\nand see your weak points automatically.");
             hint.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
             hint.setTextFill(Color.web("#64748b"));
 
@@ -100,7 +100,7 @@ public class RevisionPlanner {
         container.setPadding(new Insets(30));
         container.setStyle("-fx-background-color: #f1f5f9;"); // Clean gray background
 
-        Label title = new Label("🔥 Priority Revision Plan");
+        Label title = new Label(" Priority Revision Plan");
         title.setFont(Font.font("System", FontWeight.BOLD, 28));
         title.setTextFill(Color.web("#0f172a"));
 
@@ -152,11 +152,11 @@ public class RevisionPlanner {
         HBox actionBox = new HBox(15);
         actionBox.setAlignment(Pos.CENTER_RIGHT);
 
-        Button clearAllBtn = new Button("🗑 Clear All Scores");
+        Button clearAllBtn = new Button("Clear All Scores");
         clearAllBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; -fx-border-color: #ef4444; -fx-border-radius: 6; -fx-padding: 10 20; -fx-cursor: hand; -fx-font-weight: bold;");
         clearAllBtn.setOnAction(e -> clearAllScores(studentId, refreshCallback));
 
-        Button guideBtn = new Button("📋 Generate Study Guide");
+        Button guideBtn = new Button(" Generate Study Guide");
         guideBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 6; -fx-cursor: hand;");
         guideBtn.setOnAction(e -> showStudyGuide());
 
@@ -192,7 +192,7 @@ public class RevisionPlanner {
         bar.setStyle("-fx-accent: " + scoreColor + ";");
 
         // Delete button for this specific entry
-        Button deleteBtn = new Button("🗑 Delete");
+        Button deleteBtn = new Button("Delete");
         deleteBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;");
         deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-border-color: #ef4444; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
         deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
@@ -265,7 +265,7 @@ public class RevisionPlanner {
     private void clearAllScores(int studentId, Runnable refreshCallback) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Clear All Scores");
-        confirm.setHeaderText("⚠️ Are you sure?");
+        confirm.setHeaderText("Are you sure?");
         confirm.setContentText("This will delete ALL your performance data. This cannot be undone!");
 
         ButtonType clearBtn = new ButtonType("Clear All", ButtonBar.ButtonData.OK_DONE);
@@ -344,15 +344,15 @@ public class RevisionPlanner {
     private void showStudyGuide() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Personalized Study Guide");
-        alert.setHeaderText("📚 Your Custom Study Plan");
+        alert.setHeaderText(" Your Custom Study Plan");
 
         StringBuilder guide = new StringBuilder();
         guide.append("Based on your performance analysis:\n\n");
 
         if(weakTopics.isEmpty()) {
-            guide.append("✅ Great job! You have no weak topics. Keep maintaining your scores!\n");
+            guide.append(" Great job! You have no weak topics. Keep maintaining your scores!\n");
         } else {
-            guide.append("🎯 PRIORITY ACTIONS:\n");
+            guide.append(" PRIORITY ACTIONS:\n");
             guide.append("1. Focus on these weak areas first (score < 60%):\n");
             for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
                 guide.append("   • ").append(t.name).append(" (").append(t.score).append("%) - Suggested: 2-3 hours revision\n");
@@ -364,11 +364,11 @@ public class RevisionPlanner {
             guide.append("• Week 3: Review medium performance topics\n");
             guide.append("\n TIPS:\n");
 
-            guide.append("\n⏰ RECOMMENDED SCHEDULE:\n");
+            guide.append("\n RECOMMENDED SCHEDULE:\n");
             guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
             guide.append("• Week 2: Practice tests on weak areas\n");
             guide.append("• Week 3: Review medium performance topics\n");
-            guide.append("\n💡 TIPS:\n");
+            guide.append("\n TIPS:\n");
 
             guide.append("• Use active recall for topics below 50%\n");
             guide.append("• Create mind maps for complex subjects\n");

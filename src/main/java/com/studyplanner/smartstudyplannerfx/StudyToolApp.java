@@ -539,7 +539,7 @@ public class StudyToolApp extends Application {
                         String topicName = rs.getString("topic_name");
                         int parentId = rs.getInt("parent_topic_id");
 
-                        TreeItem<String> item = new TreeItem<>("📂 " + topicName);
+                        TreeItem<String> item = new TreeItem<>("📂" + topicName);
                         item.setExpanded(true);
                         itemMap.put(topicId, item);
 
@@ -670,7 +670,7 @@ public class StudyToolApp extends Application {
                     }
 
                     con.commit();
-                    showAlert("✅ Successfully added: " + topicName);
+                    showAlert("Successfully added: " + topicName);
                     refreshSyllabusView(subjectId, subjectName, parentContainer);
 
                 } catch (Exception ex) {
@@ -692,7 +692,7 @@ public class StudyToolApp extends Application {
             con.setAutoCommit(false);
             deleteTopicAndChildren(con, topicId);
             con.commit();
-            showAlert("✅ Topic deleted successfully!");
+            showAlert("Topic deleted successfully!");
 
             String subjectName = "";
             PreparedStatement ps = con.prepareStatement("SELECT subject_name FROM subjects WHERE subject_id = ?");
@@ -705,7 +705,7 @@ public class StudyToolApp extends Application {
 
         } catch (Exception e) {
             try { if(con != null) con.rollback(); } catch (SQLException ex) {}
-            showAlert("❌ Error deleting topic: " + e.getMessage());
+            showAlert("Error deleting topic: " + e.getMessage());
         } finally {
             try { if(con != null) con.setAutoCommit(true); } catch (SQLException e) {}
         }
