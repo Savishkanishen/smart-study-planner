@@ -87,5 +87,5 @@
             </plugin>
         </plugins>
     </build>
-    <name>SmartStudyPlannerFX1</name>
+    <name>SmartStudyPlannerFX</name>
 </project>
