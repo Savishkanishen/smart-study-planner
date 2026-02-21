@@ -308,6 +308,9 @@ public class StudyToolApp extends Application {
         btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #cbd5e1; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;");
         btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
         btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #cbd5e1; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
+        Tooltip tooltip = new Tooltip("Navigate to " + text.replaceAll("[^a-zA-Z ]", "").trim());
+        tooltip.setStyle("-fx-font-size: 12px; -fx-background-color: #1e293b; -fx-text-fill: white;");
+        btn.setTooltip(tooltip);
         return btn;
     }
 
