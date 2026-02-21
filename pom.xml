@@ -87,5 +87,9 @@
             </plugin>
         </plugins>
     </build>
+<<<<<<< HEAD
     <name>SmartStudyPlannerFX1</name>
+=======
+    <name>SmartStudyPlannerFX</name>
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
 </project>

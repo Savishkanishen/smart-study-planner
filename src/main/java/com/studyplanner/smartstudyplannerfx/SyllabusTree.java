@@ -83,7 +83,11 @@ public class SyllabusTree {
         }
     }
     
+<<<<<<< HEAD
   
+=======
+    // ==================== ADD TOPIC ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     private void showAddTopicDialog(int subjectId, String subjectName, VBox parentContainer) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -103,8 +107,12 @@ public class SyllabusTree {
         parentCombo.setPromptText("Parent Topic (optional - for sub-topics)");
         parentCombo.setMaxWidth(Double.MAX_VALUE);
         
+<<<<<<< HEAD
         // load the data
         
+=======
+        // Load existing topics for this subject as potential parents
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
         try {
             Connection con = DBConnection.getConnection();
             PreparedStatement ps = con.prepareStatement(
@@ -178,7 +186,11 @@ public class SyllabusTree {
         dialog.showAndWait();
     }
 
+<<<<<<< HEAD
    //here update topics
+=======
+    // ==================== UPDATE TOPIC ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     private void showUpdateTopicDialog(int topicId, String currentName, int subjectId, VBox parentContainer) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -241,7 +253,11 @@ public class SyllabusTree {
         dialog.showAndWait();
     }
 
+<<<<<<< HEAD
   //delete
+=======
+    // ==================== DELETE TOPIC ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     private void deleteTopic(int topicId, String topicName, int subjectId, VBox parentContainer) {
         // Check if topic has children
@@ -303,7 +319,11 @@ public class SyllabusTree {
         deletePs.executeUpdate();
     }
 
+<<<<<<< HEAD
 
+=======
+    // ==================== REFRESH VIEW ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     private void refreshSyllabusView(int subjectId, String subjectName, VBox contentArea) {
         this.currentSubjectId = subjectId;
@@ -434,7 +454,11 @@ public class SyllabusTree {
         }
     }
     
+<<<<<<< HEAD
     //
+=======
+    // ==================== ADD SUB-TOPIC ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     private void showAddSubTopicDialog(int parentTopicId, String parentName, int subjectId, VBox contentArea) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -489,7 +513,11 @@ public class SyllabusTree {
         dialog.showAndWait();
     }
 
+<<<<<<< HEAD
 
+=======
+    // ==================== UTILITY METHODS ====================
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
     
     public Map<Integer, String> getTopicMap() {
         Map<Integer, String> topics = new HashMap<>();

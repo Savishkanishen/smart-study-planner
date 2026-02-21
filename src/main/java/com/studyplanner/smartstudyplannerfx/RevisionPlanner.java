@@ -111,9 +111,15 @@ public class RevisionPlanner {
         int avgScore = heap.isEmpty() ? 0 : (int) heap.stream().mapToInt(t->t.score).average().getAsDouble();
         long weakCount = heap.stream().filter(t -> t.score < 60).count();
 
+<<<<<<< HEAD
         VBox weakCard = createStatCard("Weak Areas", String.valueOf(weakCount), "#ef4444");
         VBox avgCard = createStatCard("Average Score", avgScore + "%", "#f59e0b");
         VBox totalCard = createStatCard("Total Scored", String.valueOf(heap.size()), "#3b82f6");
+=======
+        VBox weakCard = createStatCard("⚠️ Weak Areas", String.valueOf(weakCount), "#ef4444");
+        VBox avgCard = createStatCard("📊 Average Score", avgScore + "%", "#f59e0b");
+        VBox totalCard = createStatCard("📝 Total Scored", String.valueOf(heap.size()), "#3b82f6");
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
 
         statsBox.getChildren().addAll(weakCard, avgCard, totalCard);
 
@@ -353,11 +359,19 @@ public class RevisionPlanner {
             for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
                 guide.append("   • ").append(t.name).append(" (").append(t.score).append("%) - Suggested: 2-3 hours revision\n");
             }
+<<<<<<< HEAD
             guide.append("\n RECOMMENDED SCHEDULE:\n");
             guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
             guide.append("• Week 2: Practice tests on weak areas\n");
             guide.append("• Week 3: Review medium performance topics\n");
             guide.append("\n TIPS:\n");
+=======
+            guide.append("\n⏰ RECOMMENDED SCHEDULE:\n");
+            guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
+            guide.append("• Week 2: Practice tests on weak areas\n");
+            guide.append("• Week 3: Review medium performance topics\n");
+            guide.append("\n💡 TIPS:\n");
+>>>>>>> f5146d655cd88686b0bda131b1baf776cdd18023
             guide.append("• Use active recall for topics below 50%\n");
             guide.append("• Create mind maps for complex subjects\n");
             guide.append("• Take breaks every 45 minutes\n");
