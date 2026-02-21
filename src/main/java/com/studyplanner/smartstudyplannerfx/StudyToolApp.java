@@ -296,8 +296,18 @@ public class StudyToolApp extends Application {
         welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 4);");
         BorderPane.setMargin(welcome, new Insets(40));
 
-        Label welcomeLbl = new Label("Welcome, " + currentStudent.getName() + "! 👋");
-        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
+        // Get current time for dynamic greeting
+        int hour = java.time.LocalTime.now().getHour();
+        String greeting = "Good Evening";
+        String timeEmoji = "🌙";
+        if (hour >= 5 && hour < 12) {
+            greeting = "Good Morning";
+            timeEmoji = "🌅";
+        } else if (hour >= 12 && hour < 17) {
+            greeting = "Good Afternoon";
+            timeEmoji = "☀️";
+        }
+        Label welcomeLbl = new Label(greeting + ", " + currentStudent.getName() + "! " + timeEmoji);        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
         welcomeLbl.setTextFill(Color.web("#0f172a"));
 
         Label subLbl = new Label("Select an option from the sidebar to get started");
