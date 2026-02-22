@@ -241,13 +241,13 @@ public class StudyToolApp extends Application {
         }
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #e0d2c5;");
+        root.setStyle("-fx-background-color: #f1f5f9;");
 
-        // Sidebar
+        // --- Sidebar Configuration ---
         VBox sidebar = new VBox(10);
         sidebar.setPadding(new Insets(25, 15, 25, 15));
         sidebar.setPrefWidth(260);
-        sidebar.setStyle("-fx-background-color: #1e293b; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 2, 0);"); // Deep slate
+        sidebar.setStyle("-fx-background-color: #1e293b; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 2, 0);");
         sidebar.getChildren().clear();
 
         Label userLbl = new Label("👤 " + currentStudent.getName());
@@ -255,12 +255,13 @@ public class StudyToolApp extends Application {
         userLbl.setTextFill(Color.WHITE);
         userLbl.setWrapText(true);
 
-        Button quickAddBtn = createNavButton("Add Score");
-        Button studyPathBtn = createNavButton("Study Path");
-        Button syllabusBtn = createNavButton("Syllabus");
-        Button revisionBtn = createNavButton("Revision Plan");
-        Button studyPlanBtn = createNavButton("Study Plan");
-        Button logoutBtn = createNavButton("🚪 Logout");
+        // Navigation Buttons with Tooltips
+        Button quickAddBtn = createNavButton("➕ Add Score", "Record your topic test results");
+        Button studyPathBtn = createNavButton("📚 Study Path", "Manage your subjects and prerequisites");
+        Button syllabusBtn = createNavButton("🌳 Syllabus", "Organize chapters and topics");
+        Button revisionBtn = createNavButton("🔥 Revision Plan", "Identify and focus on weak topics");
+        Button studyPlanBtn = createNavButton("📋 Study Plan", "Generate your personalized schedule");
+        Button logoutBtn = createNavButton("🚪 Logout", "Safely exit the application");
 
         quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
         studyPathBtn.setOnAction(e -> showAddMySubjectDialog());
@@ -270,15 +271,7 @@ public class StudyToolApp extends Application {
         revisionBtn.setOnAction(e -> {
             try {
                 planner.loadPerformance(currentStudent.getId());
-                Runnable refreshView = () -> {
-                    try {
-                        planner.loadPerformance(currentStudent.getId());
-                        root.setCenter(planner.getRevisionView(currentStudent.getId(), this::refreshRevisionView));
-                    } catch (Exception ex) {
-                        showAlert("Error refreshing: " + ex.getMessage());
-                    }
-                };
-                root.setCenter(planner.getRevisionView(currentStudent.getId(), refreshView));
+                root.setCenter(planner.getRevisionView(currentStudent.getId(), this::showDashboard));
             } catch (Exception ex) {
                 showAlert("Error: " + ex.getMessage());
             }
@@ -292,36 +285,23 @@ public class StudyToolApp extends Application {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        sidebar.getChildren().addAll(
-                userLbl,
-                new Region() {{ setPrefHeight(30); }},
-                studyPathBtn,
-                syllabusBtn,
-                quickAddBtn,
-                studyPlanBtn,
-                revisionBtn,
-                spacer,
-                logoutBtn
-        );
+        sidebar.getChildren().addAll(userLbl, new Region() {{ setPrefHeight(30); }},
+                studyPathBtn, syllabusBtn, quickAddBtn,
+                studyPlanBtn, revisionBtn, spacer, logoutBtn);
 
-        // Welcome content
+        // --- Center Content with Dynamic Greeting
         VBox welcome = new VBox(15);
         welcome.setAlignment(Pos.CENTER);
-        welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 4);");
+        welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12;");
         BorderPane.setMargin(welcome, new Insets(40));
 
-        // Get current time for dynamic greeting
+        // Logic for Dynamic Greeting
         int hour = java.time.LocalTime.now().getHour();
-        String greeting = "Good Evening";
-        String timeEmoji = "🌙";
-        if (hour >= 5 && hour < 12) {
-            greeting = "Good Morning";
-            timeEmoji = "🌅";
-        } else if (hour >= 12 && hour < 17) {
-            greeting = "Good Afternoon";
-            timeEmoji = "☀️";
-        }
-        Label welcomeLbl = new Label(greeting + ", " + currentStudent.getName() + "! " + timeEmoji);        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
+        String greeting = (hour < 12) ? "Good Morning" : (hour < 17) ? "Good Afternoon" : "Good Evening";
+        String timeEmoji = (hour < 12) ? "🌅" : (hour < 17) ? "☀️" : "🌙";
+
+        Label welcomeLbl = new Label(greeting + ", " + currentStudent.getName() + "! " + timeEmoji);
+        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
         welcomeLbl.setTextFill(Color.web("#0f172a"));
 
         Label subLbl = new Label("Select an option from the sidebar to get started");
@@ -336,16 +316,20 @@ public class StudyToolApp extends Application {
         primaryStage.toFront();
     }
 
-    private Button createNavButton(String text) {
+    private Button createNavButton(String text, String tooltipText) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setAlignment(Pos.CENTER_LEFT);
         btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #cbd5e1; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;");
+
         btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
         btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #cbd5e1; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
-        Tooltip tooltip = new Tooltip("Navigate to " + text.replaceAll("[^a-zA-Z ]", "").trim());
-        tooltip.setStyle("-fx-font-size: 12px; -fx-background-color: #1e293b; -fx-text-fill: white;");
+
+        // ADDED: Tooltip for UX marks
+        Tooltip tooltip = new Tooltip(tooltipText);
+        tooltip.setShowDelay(Duration.millis(300));
         btn.setTooltip(tooltip);
+
         return btn;
     }
 
