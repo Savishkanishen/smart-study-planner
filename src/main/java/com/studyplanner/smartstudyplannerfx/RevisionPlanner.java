@@ -98,7 +98,7 @@ public class RevisionPlanner {
 
         VBox container = new VBox(20);
         container.setPadding(new Insets(30));
-        container.setStyle("-fx-background-color: #f1f5f9;"); // Clean gray background
+        container.setStyle("-fx-background-color:#e0d2c5;");
 
         Label title = new Label(" Priority Revision Plan");
         title.setFont(Font.font("System", FontWeight.BOLD, 28));

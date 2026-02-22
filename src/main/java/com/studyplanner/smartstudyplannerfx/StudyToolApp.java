@@ -84,19 +84,19 @@ public class StudyToolApp extends Application {
         VBox root = new VBox(20);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(40));
-        root.setStyle("-fx-background-color: linear-gradient(to bottom right, #0f172a, #1e1b4b, #312e81);");
+        root.setStyle("-fx-background-color:#1e293b;");
      
 
         Label title = new Label("Smart Study Tool");
         title.setFont(Font.font("System", FontWeight.BOLD, 36));
-        title.setTextFill(Color.web("#1e293b"));
+        title.setTextFill(Color.WHITE);
         
          
         VBox formBox = new VBox(20);
         formBox.setAlignment(Pos.CENTER);
         formBox.setPadding(new Insets(40));
         formBox.setMaxWidth(400);
-        formBox.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 10);");
+        formBox.setStyle("-fx-background-color: #e0d2c5; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 10);");
 
         TextField emailField = new TextField();
         emailField.setPromptText("Email Address");
@@ -107,13 +107,13 @@ public class StudyToolApp extends Application {
         passField.setStyle("-fx-padding: 12; -fx-background-radius: 6; -fx-border-color: #cbd5e1; -fx-border-radius: 6; -fx-background-color: #ffffff; -fx-font-size: 14px;");
 
         Button loginBtn = new Button("Login");
-        loginBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;");
+        loginBtn.setStyle("-fx-background-color: #2b3f5e; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
-        loginBtn.setOnMouseEntered(e -> loginBtn.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;"));
-        loginBtn.setOnMouseExited(e -> loginBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;"));
+        loginBtn.setOnMouseEntered(e -> loginBtn.setStyle("-fx-background-color: #537dc2; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;"));
+        loginBtn.setOnMouseExited(e -> loginBtn.setStyle("-fx-background-color: #385482; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12 40; -fx-background-radius: 6; -fx-cursor: hand;"));
 
         Button registerBtn = new Button("Create Account");
-        registerBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #3b82f6; -fx-font-size: 14px; -fx-cursor: hand;");
+        registerBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1e293b; -fx-font-size: 14px; -fx-cursor: hand;");
 
         Label errorLbl = new Label();
         errorLbl.setTextFill(Color.web("#ef4444"));
@@ -241,7 +241,7 @@ public class StudyToolApp extends Application {
         }
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f1f5f9;"); // Clean gray background
+        root.setStyle("-fx-background-color: #e0d2c5;");
 
         // Sidebar
         VBox sidebar = new VBox(10);
@@ -352,7 +352,7 @@ public class StudyToolApp extends Application {
     private void showAddMySubjectDialog() {
         VBox container = new VBox(20);
         container.setPadding(new Insets(30));
-        container.setStyle("-fx-background-color: #f1f5f9;");
+        container.setStyle("-fx-background-color: #e0d2c5;");
 
         Label title = new Label(" Add My Study Path");
         title.setFont(Font.font("System", FontWeight.BOLD, 28));
@@ -465,7 +465,7 @@ public class StudyToolApp extends Application {
 
         VBox container = new VBox(20);
         container.setPadding(new Insets(30));
-        container.setStyle("-fx-background-color: #f1f5f9;");
+        container.setStyle("-fx-background-color: #e0d2c5;");
 
         Button backBtn = new Button("Back to Dashboard");
         backBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748b; -fx-cursor: hand; -fx-font-weight: bold;");
