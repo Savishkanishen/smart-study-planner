@@ -1026,9 +1026,33 @@ public class StudyToolApp extends Application {
                         rs = ps.executeQuery();
                         if(rs.next()) {
                             int topicId = rs.getInt("topic_id");
+                            int previousScore = -1;
+
+                            PreparedStatement checkPs = con.prepareStatement(
+                                    "SELECT score FROM performance WHERE student_id=? AND topic_id=?"
+                            );
+                            checkPs.setInt(1, currentStudent.getId());
+                            checkPs.setInt(2, topicId);
+
+                            ResultSet prevRs = checkPs.executeQuery();
+                            if(prevRs.next()) {
+                                previousScore = prevRs.getInt("score");
+                            }
                             ps = con.prepareStatement("INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
                             ps.setInt(1, currentStudent.getId()); ps.setInt(2, subjId); ps.setInt(3, topicId); ps.setInt(4, score); ps.setInt(5, score);
                             ps.executeUpdate();
+                            // 🔹 Calculate trend
+                            String trend;
+                            if(previousScore == -1) {
+                                trend = "New";
+                            } else if(score > previousScore) {
+                                trend = "Improving";
+                            } else if(score < previousScore) {
+                                trend = "Declining";
+                            } else {
+                                trend = "Stable";
+                            }
+                            planner.setTrend(topicId, trend);
                             showAlert("✅ Saved Topic score: " + topic + " = " + score + "%");
                             Platform.runLater(() -> refreshAnalysisContent()); // Correctly placed!
                             if(score < 60) showWeakPointAlert(topic, score);

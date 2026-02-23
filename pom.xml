@@ -19,14 +19,14 @@
    
    
 
-<!-- NEW (Correct for recent versions) -->
-<dependency>
-    <groupId>com.mysql</groupId>
-    <artifactId>mysql-connector-j</artifactId>
-    <version>8.0.33</version>
-    <!-- or use 8.4.0 for latest 8.x, or 9.0.0 for 9.x (but NOT 9.5.0) -->
-</dependency>
-</dependencies>
+        <!-- NEW (Correct for recent versions) -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>8.0.33</version>
+        <!-- or use 8.4.0 for latest 8.x, or 9.0.0 for 9.x (but NOT 9.5.0) -->
+        </dependency>
+    </dependencies>
     
     <build>
         <plugins>

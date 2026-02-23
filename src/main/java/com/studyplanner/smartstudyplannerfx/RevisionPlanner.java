@@ -17,12 +17,23 @@ import javafx.scene.text.FontWeight;
 class Topic {
     int id, score;
     String name;
-    Topic(int id, String name, int score){ this.id=id; this.name=name; this.score=score; }
+    String trend = "Stable";  // default value
+
+    Topic(int id, String name, int score){
+        this.id = id;
+        this.name = name;
+        this.score = score;
+    }
 }
 
 public class RevisionPlanner {
     private PriorityQueue<Topic> heap = new PriorityQueue<>(Comparator.comparingInt(t->t.score));
+    private Map<Integer, String> trendMap = new HashMap<>();
     private List<Topic> weakTopics = new ArrayList<>();
+
+    public void setTrend(int topicId, String trend) {
+        trendMap.put(topicId, trend);
+    }
 
     public void loadPerformance(int studentId) throws Exception {
         heap.clear();
@@ -52,6 +63,9 @@ public class RevisionPlanner {
             }
 
             Topic t = new Topic(topicId, topicName, score);
+            if(trendMap.containsKey(topicId)) {
+                t.trend = trendMap.get(topicId);
+            }
             heap.add(t);
             if(t.score < 60) weakTopics.add(t);
         }
@@ -182,7 +196,7 @@ public class RevisionPlanner {
         nameLbl.setFont(Font.font("System", 14));
         nameLbl.setStyle("-fx-text-fill: #1e293b;"); // CSS fix for correct coloring
 
-        Label scoreLbl = new Label(t.score + "%");
+        Label scoreLbl = new Label(t.score + "% (" + t.trend + ")");
         scoreLbl.setFont(Font.font("System", FontWeight.BOLD, 15));
         String scoreColor = t.score < 50 ? "#ef4444" : (t.score < 70 ? "#f59e0b" : "#10b981");
         scoreLbl.setStyle("-fx-text-fill: " + scoreColor + ";"); // CSS fix for correct coloring
