@@ -1029,7 +1029,9 @@ public class StudyToolApp extends Application {
                             int previousScore = -1;
 
                             PreparedStatement checkPs = con.prepareStatement(
-                                    "SELECT score FROM performance WHERE student_id=? AND topic_id=?"
+                                    "SELECT score FROM performance_history " +
+                                            "WHERE student_id=? AND topic_id=? " +
+                                            "ORDER BY recorded_at DESC LIMIT 1 OFFSET 1"
                             );
                             checkPs.setInt(1, currentStudent.getId());
                             checkPs.setInt(2, topicId);
@@ -1041,7 +1043,16 @@ public class StudyToolApp extends Application {
                             ps = con.prepareStatement("INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
                             ps.setInt(1, currentStudent.getId()); ps.setInt(2, subjId); ps.setInt(3, topicId); ps.setInt(4, score); ps.setInt(5, score);
                             ps.executeUpdate();
-                            // 🔹 Calculate trend
+
+                            PreparedStatement historyPs = con.prepareStatement(
+                                    "INSERT INTO performance_history(student_id, subject_id, topic_id, score) VALUES(?,?,?,?)"
+                            );
+                            historyPs.setInt(1, currentStudent.getId());
+                            historyPs.setInt(2, subjId);
+                            historyPs.setInt(3, topicId); // use overallTopicId in subject section
+                            historyPs.setInt(4, score);
+                            historyPs.executeUpdate();
+
                             String trend;
                             if(previousScore == -1) {
                                 trend = "New";
