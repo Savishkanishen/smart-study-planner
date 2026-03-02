@@ -883,6 +883,7 @@ public class StudyToolApp extends Application {
     }
 
     private void showAddPerformanceDialog() {
+
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Add Your Performance");
         dialog.setHeaderText("Track Marks");
@@ -905,175 +906,200 @@ public class StudyToolApp extends Application {
         RadioButton subjectRadio = new RadioButton("Entire Subject");
         subjectRadio.setToggleGroup(scoreTypeGroup);
         subjectRadio.setSelected(true);
-        subjectRadio.setTextFill(Color.web("#1e293b"));
 
         RadioButton topicRadio = new RadioButton("Specific Topic");
         topicRadio.setToggleGroup(scoreTypeGroup);
-        topicRadio.setTextFill(Color.web("#1e293b"));
 
         typeBox.getChildren().addAll(subjectRadio, topicRadio);
 
         ComboBox<String> subjectCombo = new ComboBox<>();
         subjectCombo.setPromptText("Select Subject");
         subjectCombo.setMaxWidth(Double.MAX_VALUE);
-        subjectCombo.setStyle("-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 6; -fx-padding: 5;");
 
         ComboBox<String> topicCombo = new ComboBox<>();
         topicCombo.setPromptText("Select Topic");
         topicCombo.setMaxWidth(Double.MAX_VALUE);
         topicCombo.setDisable(true);
-        topicCombo.setStyle("-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 6; -fx-padding: 5;");
 
+        // 🔥 LOAD SUBJECTS
         try {
             Connection con = DBConnection.getConnection();
             ResultSet rs = con.createStatement().executeQuery("SELECT subject_name FROM subjects");
-            while(rs.next()) subjectCombo.getItems().add(rs.getString("subject_name"));
-        } catch (Exception e) {}
+            while (rs.next()) {
+                subjectCombo.getItems().add(rs.getString("subject_name"));
+            }
+        } catch (Exception e) {
+            showAlert("Error loading subjects: " + e.getMessage());
+        }
 
+        // 🔥 LOAD TOPICS WHEN SUBJECT CHANGES
         subjectCombo.setOnAction(e -> {
             String selectedSubject = subjectCombo.getValue();
-            if(selectedSubject == null) { topicCombo.getItems().clear(); return; }
             topicCombo.getItems().clear();
+            if (selectedSubject == null) return;
+
             try {
                 Connection con = DBConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(
-                        "SELECT s.topic_name FROM syllabus s JOIN subjects sub ON s.subject_id = sub.subject_id WHERE sub.subject_name = ? AND s.topic_name NOT LIKE '📊 Overall Score%'"
+                        "SELECT s.topic_name FROM syllabus s " +
+                                "JOIN subjects sub ON s.subject_id=sub.subject_id " +
+                                "WHERE sub.subject_name=? AND s.topic_name NOT LIKE '📚 %'"
                 );
                 ps.setString(1, selectedSubject);
                 ResultSet rs = ps.executeQuery();
-                while(rs.next()) topicCombo.getItems().add(rs.getString("topic_name"));
-            } catch (Exception ex) {}
+                while (rs.next()) {
+                    topicCombo.getItems().add(rs.getString("topic_name"));
+                }
+            } catch (Exception ex) {
+                showAlert("Error loading topics: " + ex.getMessage());
+            }
         });
 
-        scoreTypeGroup.selectedToggleProperty().addListener((obs, old, newVal) -> {
-            if(newVal == subjectRadio) {
-                topicCombo.setDisable(true); topicCombo.setValue(null);
-            } else {
-                topicCombo.setDisable(false);
-                if(subjectCombo.getValue() != null && topicCombo.getItems().isEmpty()) subjectCombo.fireEvent(new ActionEvent());
-            }
+        scoreTypeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
+            topicCombo.setDisable(newVal == subjectRadio);
+            if (newVal == subjectRadio) topicCombo.setValue(null);
         });
 
         VBox scoreBox = new VBox(10);
         Slider scoreSlider = new Slider(0, 100, 50);
-        scoreSlider.setShowTickLabels(true); scoreSlider.setShowTickMarks(true); scoreSlider.setMajorTickUnit(10);
+        scoreSlider.setShowTickLabels(true);
+        scoreSlider.setShowTickMarks(true);
+        scoreSlider.setMajorTickUnit(10);
 
-        HBox scoreDisplay = new HBox(10);
-        scoreDisplay.setAlignment(Pos.CENTER);
-        Label scoreLabel = new Label("50");
-        scoreLabel.setFont(Font.font("System", FontWeight.BOLD, 48));
-        Label percentLabel = new Label("%"); percentLabel.setTextFill(Color.web("#64748b"));
-
-        scoreSlider.valueProperty().addListener((obs, old, val) -> {
-            int score = val.intValue();
-            scoreLabel.setText(String.valueOf(score));
-            if(score < 50) scoreLabel.setTextFill(Color.web("#ef4444"));
-            else if(score < 70) scoreLabel.setTextFill(Color.web("#f59e0b"));
-            else scoreLabel.setTextFill(Color.web("#10b981"));
-        });
-
-        scoreDisplay.getChildren().addAll(scoreLabel, percentLabel);
-        Label l1 = new Label("Your Score:"); l1.setTextFill(Color.web("#475569"));
-        scoreBox.getChildren().addAll(l1, scoreSlider, scoreDisplay);
-
-        Label t1 = new Label("Score For:"); t1.setTextFill(Color.web("#475569"));
-        Label t2 = new Label("Subject:"); t2.setTextFill(Color.web("#475569"));
-        Label t3 = new Label("Topic:"); t3.setTextFill(Color.web("#475569"));
-
-        content.getChildren().addAll(t1, typeBox, t2, subjectCombo, t3, topicCombo, scoreBox);
+        content.getChildren().addAll(typeBox, subjectCombo, topicCombo, scoreBox, scoreSlider);
         dialogPane.setContent(content);
 
-        ((Button)dialogPane.lookupButton(viewWeakBtnType)).addEventFilter(ActionEvent.ACTION, e -> {
-            e.consume(); showSubjectAnalysis();
-        });
-
         dialog.setResultConverter(btn -> {
-            if(btn == addBtnType) {
+
+            if (btn == addBtnType) {
+
                 try {
+
                     String subject = subjectCombo.getValue();
                     String topic = topicCombo.getValue();
-                    int score = (int)scoreSlider.getValue();
-                    if(subject == null) { showAlert("Please select a subject!"); return null; }
+                    int score = (int) scoreSlider.getValue();
+
+                    if (subject == null) {
+                        showAlert("Please select a subject!");
+                        return null;
+                    }
 
                     Connection con = DBConnection.getConnection();
-                    PreparedStatement ps = con.prepareStatement("SELECT subject_id FROM subjects WHERE subject_name=?");
-                    ps.setString(1, subject);
-                    ResultSet rs = ps.executeQuery();
-                    int subjId = 0; if(rs.next()) subjId = rs.getInt(1);
 
-                    if(subjectRadio.isSelected()) {
-                        ps = con.prepareStatement("SELECT topic_id FROM syllabus WHERE subject_id=? AND topic_name=?");
-                        ps.setInt(1, subjId); ps.setString(2, subject);
-                        rs = ps.executeQuery();
-                        int overallTopicId;
-                        if(rs.next()) overallTopicId = rs.getInt("topic_id");
+                    PreparedStatement psSub = con.prepareStatement(
+                            "SELECT subject_id FROM subjects WHERE subject_name=?");
+                    psSub.setString(1, subject);
+                    ResultSet rsSub = psSub.executeQuery();
+                    rsSub.next();
+                    int subjId = rsSub.getInt(1);
+
+                    int topicId;
+
+                    if (subjectRadio.isSelected()) {
+
+                        PreparedStatement ps = con.prepareStatement(
+                                "SELECT topic_id FROM syllabus WHERE subject_id=? AND topic_name=?");
+                        ps.setInt(1, subjId);
+                        ps.setString(2, subject);
+                        ResultSet rs = ps.executeQuery();
+
+                        if (rs.next()) topicId = rs.getInt("topic_id");
                         else {
-                            ps = con.prepareStatement("INSERT INTO syllabus(subject_id, parent_topic_id, topic_name) VALUES(?, NULL, ?)", Statement.RETURN_GENERATED_KEYS);
-                            ps.setInt(1, subjId); ps.setString(2, subject); ps.executeUpdate();
-                            ResultSet genKeys = ps.getGeneratedKeys();
-                            if(genKeys.next()) overallTopicId = genKeys.getInt(1);
-                            else throw new SQLException("Failed to create topic");
-                        }
-                        ps = con.prepareStatement("INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
-                        ps.setInt(1, currentStudent.getId()); ps.setInt(2, subjId); ps.setInt(3, overallTopicId); ps.setInt(4, score); ps.setInt(5, score);
-                        ps.executeUpdate();
-                        showAlert("✅ Saved Full Syllabus score: " + subject + " = " + score + "%");
-                        Platform.runLater(() -> refreshAnalysisContent()); // Correctly placed!
-                    } else {
-                        if(topic == null || topic.isEmpty()) { showAlert("Please select a specific topic!"); return null; }
-                        ps = con.prepareStatement("SELECT topic_id FROM syllabus WHERE topic_name=? AND subject_id=?");
-                        ps.setString(1, topic); ps.setInt(2, subjId);
-                        rs = ps.executeQuery();
-                        if(rs.next()) {
-                            int topicId = rs.getInt("topic_id");
-                            int previousScore = -1;
-
-                            PreparedStatement checkPs = con.prepareStatement(
-                                    "SELECT score FROM performance_history " +
-                                            "WHERE student_id=? AND topic_id=? " +
-                                            "ORDER BY recorded_at DESC LIMIT 1 OFFSET 1"
-                            );
-                            checkPs.setInt(1, currentStudent.getId());
-                            checkPs.setInt(2, topicId);
-
-                            ResultSet prevRs = checkPs.executeQuery();
-                            if(prevRs.next()) {
-                                previousScore = prevRs.getInt("score");
-                            }
-                            ps = con.prepareStatement("INSERT INTO performance(student_id, subject_id, topic_id, score) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
-                            ps.setInt(1, currentStudent.getId()); ps.setInt(2, subjId); ps.setInt(3, topicId); ps.setInt(4, score); ps.setInt(5, score);
+                            ps = con.prepareStatement(
+                                    "INSERT INTO syllabus(subject_id,parent_topic_id,topic_name) VALUES(?,NULL,?)",
+                                    Statement.RETURN_GENERATED_KEYS);
+                            ps.setInt(1, subjId);
+                            ps.setString(2, subject);
                             ps.executeUpdate();
-
-                            PreparedStatement historyPs = con.prepareStatement(
-                                    "INSERT INTO performance_history(student_id, subject_id, topic_id, score) VALUES(?,?,?,?)"
-                            );
-                            historyPs.setInt(1, currentStudent.getId());
-                            historyPs.setInt(2, subjId);
-                            historyPs.setInt(3, topicId); // use overallTopicId in subject section
-                            historyPs.setInt(4, score);
-                            historyPs.executeUpdate();
-
-                            String trend;
-                            if(previousScore == -1) {
-                                trend = "New";
-                            } else if(score > previousScore) {
-                                trend = "Improving";
-                            } else if(score < previousScore) {
-                                trend = "Declining";
-                            } else {
-                                trend = "Stable";
-                            }
-                            planner.setTrend(topicId, trend);
-                            showAlert("✅ Saved Topic score: " + topic + " = " + score + "%");
-                            Platform.runLater(() -> refreshAnalysisContent()); // Correctly placed!
-                            if(score < 60) showWeakPointAlert(topic, score);
+                            ResultSet gen = ps.getGeneratedKeys();
+                            gen.next();
+                            topicId = gen.getInt(1);
                         }
+
+                    } else {
+
+                        if (topic == null) {
+                            showAlert("Please select a topic!");
+                            return null;
+                        }
+
+                        PreparedStatement ps = con.prepareStatement(
+                                "SELECT topic_id FROM syllabus WHERE topic_name=? AND subject_id=?");
+                        ps.setString(1, topic);
+                        ps.setInt(2, subjId);
+                        ResultSet rs = ps.executeQuery();
+                        rs.next();
+                        topicId = rs.getInt("topic_id");
                     }
-                    planner.loadPerformance(currentStudent.getId());
-                } catch (Exception e) { showAlert("Error: " + e.getMessage()); }
+
+                    // 🔥 UPDATE SNAPSHOT TABLE
+                    PreparedStatement snapshotPs = con.prepareStatement(
+                            "INSERT INTO performance(student_id,subject_id,topic_id,score) " +
+                                    "VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
+                    snapshotPs.setInt(1, currentStudent.getId());
+                    snapshotPs.setInt(2, subjId);
+                    snapshotPs.setInt(3, topicId);
+                    snapshotPs.setInt(4, score);
+                    snapshotPs.setInt(5, score);
+                    snapshotPs.executeUpdate();
+
+                    // 🔥 TREND ENGINE
+                    PreparedStatement checkHistory = con.prepareStatement(
+                            "SELECT current_score FROM performance_history WHERE student_id=? AND topic_id=?");
+                    checkHistory.setInt(1, currentStudent.getId());
+                    checkHistory.setInt(2, topicId);
+                    ResultSet rsHistory = checkHistory.executeQuery();
+
+                    String trend;
+
+                    if (rsHistory.next()) {
+
+                        int oldCurrent = rsHistory.getInt("current_score");
+
+                        PreparedStatement updateHistory = con.prepareStatement(
+                                "UPDATE performance_history SET previous_score=?, current_score=? " +
+                                        "WHERE student_id=? AND topic_id=?");
+
+                        updateHistory.setInt(1, oldCurrent);
+                        updateHistory.setInt(2, score);
+                        updateHistory.setInt(3, currentStudent.getId());
+                        updateHistory.setInt(4, topicId);
+                        updateHistory.executeUpdate();
+
+                        if (score > oldCurrent) trend = "Improving";
+                        else if (score < oldCurrent) trend = "Declining";
+                        else trend = "Stable";
+
+                    } else {
+
+                        PreparedStatement insertHistory = con.prepareStatement(
+                                "INSERT INTO performance_history(student_id,subject_id,topic_id,previous_score,current_score) " +
+                                        "VALUES(?,?,?,?,?)");
+
+                        insertHistory.setInt(1, currentStudent.getId());
+                        insertHistory.setInt(2, subjId);
+                        insertHistory.setInt(3, topicId);
+                        insertHistory.setNull(4, Types.INTEGER);
+                        insertHistory.setInt(5, score);
+                        insertHistory.executeUpdate();
+
+                        if (score >= 75) trend = "Perfect";
+                        else if (score >= 60) trend = "Good";
+                        else trend = "Bad";
+                    }
+
+                    planner.setTrend(topicId, trend);
+
+                    Platform.runLater(this::refreshRevisionView);
+
+                } catch (Exception e) {
+                    showAlert("Error: " + e.getMessage());
+                }
             }
+
             return null;
         });
+
         dialog.showAndWait();
     }
 
