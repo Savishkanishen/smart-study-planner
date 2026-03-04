@@ -402,36 +402,82 @@ public class RevisionPlanner {
     }
 
     private void showStudyGuide() {
+
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Personalized Study Guide");
-        alert.setHeaderText(" Your Custom Study Plan");
+        alert.setHeaderText("Your Smart Adaptive Study Plan");
+
+        alert.getDialogPane().setPrefWidth(480);
+        alert.getDialogPane().setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 13px;");
 
         StringBuilder guide = new StringBuilder();
-        guide.append("Based on your performance analysis:\n\n");
+
+        guide.append("🎯 SMART STUDY GUIDE\n\n");
 
         if(weakTopics.isEmpty()) {
-            guide.append(" Great job! You have no weak topics. Keep maintaining your scores!\n");
+
+            guide.append("✅ Excellent work!\n\n");
+            guide.append("You currently have no weak topics.\n");
+            guide.append("Maintain your performance with light revision.\n");
+
         } else {
-            guide.append(" PRIORITY ACTIONS:\n");
-            guide.append("1. Focus on these weak areas first (score < 60%):\n");
+
+            guide.append("🔥 PRIORITY TOPICS\n");
+            guide.append("────────────────────────\n\n");
+
+            int totalTime = 0;
+            int rank = 1;
+
             for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
-                guide.append("   • ").append(t.name).append(" (").append(t.score).append("%) - Suggested: 2-3 hours revision\n");
+
+                int score = t.score;
+
+                int time;
+
+                if(score < 40) time = 60;
+                else if(score < 60) time = 40;
+                else if(score < 80) time = 20;
+                else time = 10;
+
+                totalTime += time;
+
+                guide.append(rank).append(". ").append(t.name)
+                        .append(" — ").append(score).append("%")
+                        .append(" (").append(t.trend).append(")\n");
+
+                guide.append("   ⏱ Suggested Study Time: ")
+                        .append(time).append(" minutes\n\n");
+
+                rank++;
             }
 
-            guide.append("\n RECOMMENDED SCHEDULE:\n");
-            guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
-            guide.append("• Week 2: Practice tests on weak areas\n");
-            guide.append("• Week 3: Review medium performance topics\n");
-            guide.append("\n TIPS:\n");
+            guide.append("📅 TODAY'S STUDY PLAN\n");
+            guide.append("────────────────────────\n");
 
-            guide.append("\n RECOMMENDED SCHEDULE:\n");
-            guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
-            guide.append("• Week 2: Practice tests on weak areas\n");
-            guide.append("• Week 3: Review medium performance topics\n");
-            guide.append("\n TIPS:\n");
+            for(Topic t : weakTopics.stream().limit(3).collect(Collectors.toList())) {
 
+                int score = t.score;
+
+                int time;
+
+                if(score < 40) time = 60;
+                else if(score < 60) time = 40;
+                else time = 20;
+
+                guide.append("📘 ")
+                        .append(t.name)
+                        .append(" → ")
+                        .append(time)
+                        .append(" minutes\n");
+            }
+
+            guide.append("\n⏳ TOTAL STUDY TIME TODAY\n");
+            guide.append(totalTime).append(" minutes\n");
+
+            guide.append("\n💡 STUDY TIPS\n");
             guide.append("• Use active recall for topics below 50%\n");
-            guide.append("• Create mind maps for complex subjects\n");
+            guide.append("• Practice past exam questions\n");
+            guide.append("• Review improving topics briefly\n");
             guide.append("• Take breaks every 45 minutes\n");
         }
 
@@ -458,29 +504,51 @@ public class RevisionPlanner {
         try {
             Connection con = DBConnection.getConnection();
 
-            PreparedStatement ps = con.prepareStatement(
-                    "SELECT previous_score, current_score " +
-                            "FROM performance_history " +
-                            "WHERE topic_id=? AND student_id=?"
-            );
+            PreparedStatement ps;
 
-            ps.setInt(1, topicId);
-            ps.setInt(2, studentId);
+            // 🔹 If it is a "Full Syllabus" subject row
+            if (topicName.contains("(Full Syllabus)")) {
+
+                PreparedStatement subPs = con.prepareStatement(
+                        "SELECT subject_id FROM syllabus WHERE topic_id=?"
+                );
+                subPs.setInt(1, topicId);
+
+                ResultSet subRs = subPs.executeQuery();
+                int subjectId = -1;
+
+                if (subRs.next()) {
+                    subjectId = subRs.getInt("subject_id");
+                }
+
+                ps = con.prepareStatement(
+                        "SELECT score FROM performance_log " +
+                                "WHERE subject_id=? AND student_id=? " +
+                                "ORDER BY recorded_at ASC"
+                );
+
+                ps.setInt(1, subjectId);
+                ps.setInt(2, studentId);
+
+            } else {
+                // 🔹 Topic progress
+                ps = con.prepareStatement(
+                        "SELECT score FROM performance_log " +
+                                "WHERE topic_id=? AND student_id=? " +
+                                "ORDER BY recorded_at ASC"
+                );
+
+                ps.setInt(1, topicId);
+                ps.setInt(2, studentId);
+            }
 
             ResultSet rs = ps.executeQuery();
 
             int attempt = 1;
 
-            if(rs.next()) {
-
-                int prev = rs.getInt("previous_score");
-                int curr = rs.getInt("current_score");
-
-                if(!rs.wasNull()) {
-                    series.getData().add(new XYChart.Data<>(attempt++, prev));
-                }
-
-                series.getData().add(new XYChart.Data<>(attempt, curr));
+            while (rs.next()) {
+                int score = rs.getInt("score");
+                series.getData().add(new XYChart.Data<>(attempt++, score));
             }
 
         } catch (Exception e) {
@@ -494,7 +562,7 @@ public class RevisionPlanner {
         VBox layout = new VBox(lineChart);
         layout.setPadding(new Insets(20));
 
-        Scene scene = new Scene(layout, 600, 400);
+        Scene scene = new Scene(layout, 700, 450);
         stage.setScene(scene);
         stage.show();
     }

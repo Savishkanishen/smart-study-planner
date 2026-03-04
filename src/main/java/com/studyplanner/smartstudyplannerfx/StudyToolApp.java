@@ -241,7 +241,7 @@ public class StudyToolApp extends Application {
         }
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f1f5f9;");
+        root.setStyle("-fx-background-color: #e0d2c5;");
 
         // --- Sidebar Configuration ---
         VBox sidebar = new VBox(10);
@@ -921,7 +921,6 @@ public class StudyToolApp extends Application {
         topicCombo.setMaxWidth(Double.MAX_VALUE);
         topicCombo.setDisable(true);
 
-        // 🔥 LOAD SUBJECTS
         try {
             Connection con = DBConnection.getConnection();
             ResultSet rs = con.createStatement().executeQuery("SELECT subject_name FROM subjects");
@@ -932,7 +931,6 @@ public class StudyToolApp extends Application {
             showAlert("Error loading subjects: " + e.getMessage());
         }
 
-        // 🔥 LOAD TOPICS WHEN SUBJECT CHANGES
         subjectCombo.setOnAction(e -> {
             String selectedSubject = subjectCombo.getValue();
             topicCombo.getItems().clear();
@@ -960,13 +958,12 @@ public class StudyToolApp extends Application {
             if (newVal == subjectRadio) topicCombo.setValue(null);
         });
 
-        VBox scoreBox = new VBox(10);
         Slider scoreSlider = new Slider(0, 100, 50);
         scoreSlider.setShowTickLabels(true);
         scoreSlider.setShowTickMarks(true);
         scoreSlider.setMajorTickUnit(10);
 
-        content.getChildren().addAll(typeBox, subjectCombo, topicCombo, scoreBox, scoreSlider);
+        content.getChildren().addAll(typeBox, subjectCombo, topicCombo, scoreSlider);
         dialogPane.setContent(content);
 
         dialog.setResultConverter(btn -> {
@@ -1032,7 +1029,7 @@ public class StudyToolApp extends Application {
                         topicId = rs.getInt("topic_id");
                     }
 
-                    // 🔥 UPDATE SNAPSHOT TABLE
+
                     PreparedStatement snapshotPs = con.prepareStatement(
                             "INSERT INTO performance(student_id,subject_id,topic_id,score) " +
                                     "VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE score=?");
@@ -1043,7 +1040,17 @@ public class StudyToolApp extends Application {
                     snapshotPs.setInt(5, score);
                     snapshotPs.executeUpdate();
 
-                    // 🔥 TREND ENGINE
+
+                    PreparedStatement logPs = con.prepareStatement(
+                            "INSERT INTO performance_log(student_id, subject_id, topic_id, score) VALUES(?,?,?,?)"
+                    );
+                    logPs.setInt(1, currentStudent.getId());
+                    logPs.setInt(2, subjId);
+                    logPs.setInt(3, topicId);
+                    logPs.setInt(4, score);
+                    logPs.executeUpdate();
+
+
                     PreparedStatement checkHistory = con.prepareStatement(
                             "SELECT current_score FROM performance_history WHERE student_id=? AND topic_id=?");
                     checkHistory.setInt(1, currentStudent.getId());
