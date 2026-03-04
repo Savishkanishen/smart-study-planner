@@ -13,6 +13,11 @@ import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 
 class Topic {
     int id, score;
@@ -213,7 +218,48 @@ public class RevisionPlanner {
         deleteBtn.setOnAction(e -> deleteSingleEntry(studentId, t.id, t.name, refreshCallback));
 
         HBox.setHgrow(nameLbl, Priority.ALWAYS);
-        topicRow.getChildren().addAll(nameLbl, bar, scoreLbl, deleteBtn);
+
+        Button progressBtn = new Button("Progress");
+
+        progressBtn.setStyle(
+                "-fx-background-color: #e0f2fe;" +
+                        "-fx-text-fill: #0284c7;" +
+                        "-fx-border-color: #bae6fd;" +
+                        "-fx-border-radius: 5;" +
+                        "-fx-background-radius: 5;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        progressBtn.setOnMouseEntered(e ->
+                progressBtn.setStyle(
+                        "-fx-background-color: #0284c7;" +
+                                "-fx-text-fill: white;" +
+                                "-fx-border-color: #0284c7;" +
+                                "-fx-border-radius: 5;" +
+                                "-fx-background-radius: 5;" +
+                                "-fx-cursor: hand;" +
+                                "-fx-font-weight: bold;"
+                )
+        );
+
+        progressBtn.setOnMouseExited(e ->
+                progressBtn.setStyle(
+                        "-fx-background-color: #e0f2fe;" +
+                                "-fx-text-fill: #0284c7;" +
+                                "-fx-border-color: #bae6fd;" +
+                                "-fx-border-radius: 5;" +
+                                "-fx-background-radius: 5;" +
+                                "-fx-cursor: hand;" +
+                                "-fx-font-weight: bold;"
+                )
+        );
+
+        progressBtn.setOnAction(e -> showProgressGraph(t.id, t.name, studentId));
+
+        HBox.setHgrow(nameLbl, Priority.ALWAYS);
+
+        topicRow.getChildren().addAll(nameLbl, bar, scoreLbl, progressBtn, deleteBtn);
 
         return topicRow;
     }
@@ -391,5 +437,65 @@ public class RevisionPlanner {
 
         alert.setContentText(guide.toString());
         alert.showAndWait();
+    }
+    private void showProgressGraph(int topicId, String topicName, int studentId) {
+
+        Stage stage = new Stage();
+        stage.setTitle("Progress - " + topicName);
+
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabel("Attempt");
+
+        NumberAxis yAxis = new NumberAxis(0, 100, 10);
+        yAxis.setLabel("Score (%)");
+
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+        lineChart.setTitle("Performance Trend");
+
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName(topicName);
+
+        try {
+            Connection con = DBConnection.getConnection();
+
+            PreparedStatement ps = con.prepareStatement(
+                    "SELECT previous_score, current_score " +
+                            "FROM performance_history " +
+                            "WHERE topic_id=? AND student_id=?"
+            );
+
+            ps.setInt(1, topicId);
+            ps.setInt(2, studentId);
+
+            ResultSet rs = ps.executeQuery();
+
+            int attempt = 1;
+
+            if(rs.next()) {
+
+                int prev = rs.getInt("previous_score");
+                int curr = rs.getInt("current_score");
+
+                if(!rs.wasNull()) {
+                    series.getData().add(new XYChart.Data<>(attempt++, prev));
+                }
+
+                series.getData().add(new XYChart.Data<>(attempt, curr));
+            }
+
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Error loading progress data: " + e.getMessage());
+            alert.showAndWait();
+        }
+
+        lineChart.getData().add(series);
+
+        VBox layout = new VBox(lineChart);
+        layout.setPadding(new Insets(20));
+
+        Scene scene = new Scene(layout, 600, 400);
+        stage.setScene(scene);
+        stage.show();
     }
 }
