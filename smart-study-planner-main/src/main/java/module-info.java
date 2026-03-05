@@ -1,9 +1,8 @@
 module com.studyplanner.smartstudyplannerfx {
     requires javafx.controls;
     requires java.sql;
-<<<<<<< HEAD
+    // add sql lite
     requires org.xerial.sqlitejdbc;
-=======
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
+
     exports com.studyplanner.smartstudyplannerfx;
 }

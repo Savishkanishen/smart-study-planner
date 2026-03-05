@@ -1,35 +1,5 @@
 package com.studyplanner.smartstudyplannerfx;
 
-<<<<<<< HEAD
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.stream.Collectors;
-
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-=======
 import java.util.PriorityQueue;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,25 +10,21 @@ import javafx.scene.layout.*;
 import javafx.scene.control.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-<<<<<<< HEAD
-=======
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 
 class Topic {
     int id, score;
     String name;
-    String trend = "Stable";  // default value
+    String trend = "Stable"; // default value
 
-    Topic(int id, String name, int score){
+    Topic(int id, String name, int score) {
         this.id = id;
         this.name = name;
         this.score = score;
@@ -66,7 +32,7 @@ class Topic {
 }
 
 public class RevisionPlanner {
-    private PriorityQueue<Topic> heap = new PriorityQueue<>(Comparator.comparingInt(t->t.score));
+    private PriorityQueue<Topic> heap = new PriorityQueue<>(Comparator.comparingInt(t -> t.score));
     private Map<Integer, String> trendMap = new HashMap<>();
     private List<Topic> weakTopics = new ArrayList<>();
 
@@ -77,11 +43,7 @@ public class RevisionPlanner {
     public void loadPerformance(int studentId) throws Exception {
         heap.clear();
         weakTopics.clear();
-<<<<<<< HEAD
         Connection con = SQLiteConnection.getConnection();
-=======
-        Connection con = DBConnection.getConnection();
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 
         // Load topic scores with subject info for display
         PreparedStatement ps = con.prepareStatement(
@@ -89,28 +51,28 @@ public class RevisionPlanner {
                         "FROM performance p " +
                         "JOIN syllabus s ON p.topic_id = s.topic_id " +
                         "JOIN subjects sub ON p.subject_id = sub.subject_id " +
-                        "WHERE p.student_id=?"
-        );
+                        "WHERE p.student_id=?");
         ps.setInt(1, studentId);
         ResultSet rs = ps.executeQuery();
 
-        while(rs.next()){
+        while (rs.next()) {
             int topicId = rs.getInt("topic_id");
             String topicName = rs.getString("topic_name");
             int score = rs.getInt("score");
             String subjectName = rs.getString("subject_name");
 
             // LOGIC FIX: Check if this is an "Entire Subject" dummy topic
-            if(topicName.equals(subjectName)) {
+            if (topicName.equals(subjectName)) {
                 topicName = "📚 " + subjectName + " (Full Syllabus)";
             }
 
             Topic t = new Topic(topicId, topicName, score);
-            if(trendMap.containsKey(topicId)) {
+            if (trendMap.containsKey(topicId)) {
                 t.trend = trendMap.get(topicId);
             }
             heap.add(t);
-            if(t.score < 60) weakTopics.add(t);
+            if (t.score < 60)
+                weakTopics.add(t);
         }
     }
 
@@ -119,7 +81,7 @@ public class RevisionPlanner {
     }
 
     public PriorityQueue<Topic> getWeakTopics() {
-        PriorityQueue<Topic> weak = new PriorityQueue<>(Comparator.comparingInt(t->t.score));
+        PriorityQueue<Topic> weak = new PriorityQueue<>(Comparator.comparingInt(t -> t.score));
         weak.addAll(weakTopics);
         return weak;
     }
@@ -132,7 +94,7 @@ public class RevisionPlanner {
 
     // Modified to accept a refresh callback
     public VBox getRevisionView(int studentId, Runnable refreshCallback) {
-        if(heap.isEmpty()) {
+        if (heap.isEmpty()) {
             VBox emptyState = new VBox(20);
             emptyState.setAlignment(Pos.CENTER);
             emptyState.setPadding(new Insets(50));
@@ -165,16 +127,12 @@ public class RevisionPlanner {
         HBox statsBox = new HBox(20);
         statsBox.setAlignment(Pos.CENTER_LEFT);
 
-        int avgScore = heap.isEmpty() ? 0 : (int) heap.stream().mapToInt(t->t.score).average().getAsDouble();
+        int avgScore = heap.isEmpty() ? 0 : (int) heap.stream().mapToInt(t -> t.score).average().getAsDouble();
         long weakCount = heap.stream().filter(t -> t.score < 60).count();
-
 
         VBox weakCard = createStatCard("Weak Areas", String.valueOf(weakCount), "#ef4444");
         VBox avgCard = createStatCard("Average Score", avgScore + "%", "#f59e0b");
         VBox totalCard = createStatCard("Total Scored", String.valueOf(heap.size()), "#3b82f6");
-
-      
-
 
         statsBox.getChildren().addAll(weakCard, avgCard, totalCard);
 
@@ -185,7 +143,8 @@ public class RevisionPlanner {
 
         VBox listBox = new VBox(12);
         listBox.setPadding(new Insets(20));
-        listBox.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 4);");
+        listBox.setStyle(
+                "-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 10, 0, 0, 4);");
 
         Label listTitle = new Label("Weakest Areas First - Study These!");
         listTitle.setFont(Font.font("System", FontWeight.BOLD, 18));
@@ -196,7 +155,7 @@ public class RevisionPlanner {
         PriorityQueue<Topic> tempHeap = new PriorityQueue<>(heap);
         int count = 0;
 
-        while(!tempHeap.isEmpty() && count < 10) {
+        while (!tempHeap.isEmpty() && count < 10) {
             Topic t = tempHeap.poll();
             HBox topicRow = createTopicRow(t, studentId, refreshCallback);
             listBox.getChildren().add(topicRow);
@@ -210,11 +169,13 @@ public class RevisionPlanner {
         actionBox.setAlignment(Pos.CENTER_RIGHT);
 
         Button clearAllBtn = new Button("Clear All Scores");
-        clearAllBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; -fx-border-color: #ef4444; -fx-border-radius: 6; -fx-padding: 10 20; -fx-cursor: hand; -fx-font-weight: bold;");
+        clearAllBtn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #ef4444; -fx-border-color: #ef4444; -fx-border-radius: 6; -fx-padding: 10 20; -fx-cursor: hand; -fx-font-weight: bold;");
         clearAllBtn.setOnAction(e -> clearAllScores(studentId, refreshCallback));
 
         Button guideBtn = new Button(" Generate Study Guide");
-        guideBtn.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 6; -fx-cursor: hand;");
+        guideBtn.setStyle(
+                "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 6; -fx-cursor: hand;");
         guideBtn.setOnAction(e -> showStudyGuide());
 
         Region spacer = new Region();
@@ -231,7 +192,8 @@ public class RevisionPlanner {
         HBox topicRow = new HBox(15);
         topicRow.setAlignment(Pos.CENTER_LEFT);
         topicRow.setPadding(new Insets(12, 15, 12, 15));
-        topicRow.setStyle("-fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;");
+        topicRow.setStyle(
+                "-fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;");
 
         String emoji = t.score < 50 ? "🔴" : (t.score < 70 ? "🟡" : "🟢");
 
@@ -250,9 +212,12 @@ public class RevisionPlanner {
 
         // Delete button for this specific entry
         Button deleteBtn = new Button("Delete");
-        deleteBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;");
-        deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-border-color: #ef4444; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
-        deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
+        deleteBtn.setStyle(
+                "-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;");
+        deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle(
+                "-fx-background-color: #ef4444; -fx-text-fill: white; -fx-border-color: #ef4444; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
+        deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle(
+                "-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
         deleteBtn.setOnAction(e -> deleteSingleEntry(studentId, t.id, t.name, refreshCallback));
 
         HBox.setHgrow(nameLbl, Priority.ALWAYS);
@@ -266,32 +231,25 @@ public class RevisionPlanner {
                         "-fx-border-radius: 5;" +
                         "-fx-background-radius: 5;" +
                         "-fx-cursor: hand;" +
-                        "-fx-font-weight: bold;"
-        );
+                        "-fx-font-weight: bold;");
 
-        progressBtn.setOnMouseEntered(e ->
-                progressBtn.setStyle(
-                        "-fx-background-color: #0284c7;" +
-                                "-fx-text-fill: white;" +
-                                "-fx-border-color: #0284c7;" +
-                                "-fx-border-radius: 5;" +
-                                "-fx-background-radius: 5;" +
-                                "-fx-cursor: hand;" +
-                                "-fx-font-weight: bold;"
-                )
-        );
+        progressBtn.setOnMouseEntered(e -> progressBtn.setStyle(
+                "-fx-background-color: #0284c7;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-border-color: #0284c7;" +
+                        "-fx-border-radius: 5;" +
+                        "-fx-background-radius: 5;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-font-weight: bold;"));
 
-        progressBtn.setOnMouseExited(e ->
-                progressBtn.setStyle(
-                        "-fx-background-color: #e0f2fe;" +
-                                "-fx-text-fill: #0284c7;" +
-                                "-fx-border-color: #bae6fd;" +
-                                "-fx-border-radius: 5;" +
-                                "-fx-background-radius: 5;" +
-                                "-fx-cursor: hand;" +
-                                "-fx-font-weight: bold;"
-                )
-        );
+        progressBtn.setOnMouseExited(e -> progressBtn.setStyle(
+                "-fx-background-color: #e0f2fe;" +
+                        "-fx-text-fill: #0284c7;" +
+                        "-fx-border-color: #bae6fd;" +
+                        "-fx-border-radius: 5;" +
+                        "-fx-background-radius: 5;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-font-weight: bold;"));
 
         progressBtn.setOnAction(e -> showProgressGraph(t.id, t.name, studentId));
 
@@ -310,37 +268,33 @@ public class RevisionPlanner {
         confirm.setContentText("Remove: " + displayName + "\n\nAre you sure?");
 
         confirm.showAndWait().ifPresent(response -> {
-            if(response.getText().equals("OK")) {
+            if (response.getText().equals("OK")) {
                 try {
-<<<<<<< HEAD
                     Connection con = SQLiteConnection.getConnection();
-=======
-                    Connection con = DBConnection.getConnection();
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 
                     // LOGIC FIX: Check if it's an "Entire Subject" dummy topic
                     PreparedStatement checkPs = con.prepareStatement(
                             "SELECT s.topic_name, sub.subject_name FROM performance p " +
                                     "JOIN syllabus s ON p.topic_id = s.topic_id " +
                                     "JOIN subjects sub ON p.subject_id = sub.subject_id " +
-                                    "WHERE p.topic_id=?"
-                    );
+                                    "WHERE p.topic_id=?");
                     checkPs.setInt(1, topicId);
                     ResultSet rs = checkPs.executeQuery();
                     boolean isOverallScore = false;
-                    if(rs.next()) {
+                    if (rs.next()) {
                         isOverallScore = rs.getString("topic_name").equals(rs.getString("subject_name"));
                     }
 
                     // Delete performance record
-                    PreparedStatement ps = con.prepareStatement("DELETE FROM performance WHERE student_id=? AND topic_id=?");
+                    PreparedStatement ps = con
+                            .prepareStatement("DELETE FROM performance WHERE student_id=? AND topic_id=?");
                     ps.setInt(1, studentId);
                     ps.setInt(2, topicId);
                     int deleted = ps.executeUpdate();
 
-                    if(deleted > 0) {
+                    if (deleted > 0) {
                         // If it was an overall score dummy topic, delete it from syllabus too
-                        if(isOverallScore) {
+                        if (isOverallScore) {
                             ps = con.prepareStatement("DELETE FROM syllabus WHERE topic_id=?");
                             ps.setInt(1, topicId);
                             ps.executeUpdate();
@@ -350,7 +304,7 @@ public class RevisionPlanner {
                         loadPerformance(studentId);
 
                         // REAL-TIME REFRESH - Call the callback to update UI
-                        if(refreshCallback != null) {
+                        if (refreshCallback != null) {
                             refreshCallback.run();
                         }
                     }
@@ -375,26 +329,21 @@ public class RevisionPlanner {
         confirm.getButtonTypes().setAll(clearBtn, cancelBtn);
 
         confirm.showAndWait().ifPresent(response -> {
-            if(response == clearBtn) {
+            if (response == clearBtn) {
                 try {
-<<<<<<< HEAD
                     Connection con = SQLiteConnection.getConnection();
-=======
-                    Connection con = DBConnection.getConnection();
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 
                     // LOGIC FIX: Get all dummy topic IDs first using the proper name matching
                     PreparedStatement ps = con.prepareStatement(
                             "SELECT p.topic_id FROM performance p " +
                                     "JOIN syllabus s ON p.topic_id = s.topic_id " +
                                     "JOIN subjects sub ON p.subject_id = sub.subject_id " +
-                                    "WHERE p.student_id=? AND s.topic_name = sub.subject_name"
-                    );
+                                    "WHERE p.student_id=? AND s.topic_name = sub.subject_name");
                     ps.setInt(1, studentId);
                     ResultSet rs = ps.executeQuery();
 
                     List<Integer> dummyTopicIds = new ArrayList<>();
-                    while(rs.next()) {
+                    while (rs.next()) {
                         dummyTopicIds.add(rs.getInt("topic_id"));
                     }
 
@@ -404,7 +353,7 @@ public class RevisionPlanner {
                     ps.executeUpdate();
 
                     // Clean up dummy topics
-                    for(int id : dummyTopicIds) {
+                    for (int id : dummyTopicIds) {
                         ps = con.prepareStatement("DELETE FROM syllabus WHERE topic_id=?");
                         ps.setInt(1, id);
                         ps.executeUpdate();
@@ -414,7 +363,7 @@ public class RevisionPlanner {
                     loadPerformance(studentId);
 
                     // REAL-TIME REFRESH
-                    if(refreshCallback != null) {
+                    if (refreshCallback != null) {
                         refreshCallback.run();
                     }
 
@@ -433,7 +382,8 @@ public class RevisionPlanner {
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(20));
         card.setPrefWidth(160);
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);");
+        card.setStyle(
+                "-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);");
 
         Label valLbl = new Label(value);
         valLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
@@ -448,88 +398,44 @@ public class RevisionPlanner {
     }
 
     private void showStudyGuide() {
-
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Personalized Study Guide");
-        alert.setHeaderText("Your Smart Adaptive Study Plan");
-
-        alert.getDialogPane().setPrefWidth(480);
-        alert.getDialogPane().setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 13px;");
+        alert.setHeaderText(" Your Custom Study Plan");
 
         StringBuilder guide = new StringBuilder();
+        guide.append("Based on your performance analysis:\n\n");
 
-        guide.append("🎯 SMART STUDY GUIDE\n\n");
-
-        if(weakTopics.isEmpty()) {
-
-            guide.append("✅ Excellent work!\n\n");
-            guide.append("You currently have no weak topics.\n");
-            guide.append("Maintain your performance with light revision.\n");
-
+        if (weakTopics.isEmpty()) {
+            guide.append(" Great job! You have no weak topics. Keep maintaining your scores!\n");
         } else {
-
-            guide.append("🔥 PRIORITY TOPICS\n");
-            guide.append("────────────────────────\n\n");
-
-            int totalTime = 0;
-            int rank = 1;
-
-            for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
-
-                int score = t.score;
-
-                int time;
-
-                if(score < 40) time = 60;
-                else if(score < 60) time = 40;
-                else if(score < 80) time = 20;
-                else time = 10;
-
-                totalTime += time;
-
-                guide.append(rank).append(". ").append(t.name)
-                        .append(" — ").append(score).append("%")
-                        .append(" (").append(t.trend).append(")\n");
-
-                guide.append("   ⏱ Suggested Study Time: ")
-                        .append(time).append(" minutes\n\n");
-
-                rank++;
+            guide.append(" PRIORITY ACTIONS:\n");
+            guide.append("1. Focus on these weak areas first (score < 60%):\n");
+            for (Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
+                guide.append("   • ").append(t.name).append(" (").append(t.score)
+                        .append("%) - Suggested: 2-3 hours revision\n");
             }
 
-            guide.append("📅 TODAY'S STUDY PLAN\n");
-            guide.append("────────────────────────\n");
+            guide.append("\n RECOMMENDED SCHEDULE:\n");
+            guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
+            guide.append("• Week 2: Practice tests on weak areas\n");
+            guide.append("• Week 3: Review medium performance topics\n");
+            guide.append("\n TIPS:\n");
 
-            for(Topic t : weakTopics.stream().limit(3).collect(Collectors.toList())) {
+            guide.append("\n RECOMMENDED SCHEDULE:\n");
+            guide.append("• Week 1: Cover bottom 3 topics (Intensive revision)\n");
+            guide.append("• Week 2: Practice tests on weak areas\n");
+            guide.append("• Week 3: Review medium performance topics\n");
+            guide.append("\n TIPS:\n");
 
-                int score = t.score;
-
-                int time;
-
-                if(score < 40) time = 60;
-                else if(score < 60) time = 40;
-                else time = 20;
-
-                guide.append("📘 ")
-                        .append(t.name)
-                        .append(" → ")
-                        .append(time)
-                        .append(" minutes\n");
-            }
-
-            guide.append("\n⏳ TOTAL STUDY TIME TODAY\n");
-            guide.append(totalTime).append(" minutes\n");
-
-            guide.append("\n💡 STUDY TIPS\n");
             guide.append("• Use active recall for topics below 50%\n");
-            guide.append("• Practice past exam questions\n");
-            guide.append("• Review improving topics briefly\n");
+            guide.append("• Create mind maps for complex subjects\n");
             guide.append("• Take breaks every 45 minutes\n");
         }
 
         alert.setContentText(guide.toString());
         alert.showAndWait();
     }
+
     private void showProgressGraph(int topicId, String topicName, int studentId) {
 
         Stage stage = new Stage();
@@ -548,57 +454,30 @@ public class RevisionPlanner {
         series.setName(topicName);
 
         try {
-<<<<<<< HEAD
             Connection con = SQLiteConnection.getConnection();
-=======
-            Connection con = DBConnection.getConnection();
->>>>>>> 4d1e23923e606a7b8df85c2ca2bd32effc447207
 
-            PreparedStatement ps;
+            PreparedStatement ps = con.prepareStatement(
+                    "SELECT previous_score, current_score " +
+                            "FROM performance_history " +
+                            "WHERE topic_id=? AND student_id=?");
 
-            // 🔹 If it is a "Full Syllabus" subject row
-            if (topicName.contains("(Full Syllabus)")) {
-
-                PreparedStatement subPs = con.prepareStatement(
-                        "SELECT subject_id FROM syllabus WHERE topic_id=?"
-                );
-                subPs.setInt(1, topicId);
-
-                ResultSet subRs = subPs.executeQuery();
-                int subjectId = -1;
-
-                if (subRs.next()) {
-                    subjectId = subRs.getInt("subject_id");
-                }
-
-                ps = con.prepareStatement(
-                        "SELECT score FROM performance_log " +
-                                "WHERE subject_id=? AND student_id=? " +
-                                "ORDER BY recorded_at ASC"
-                );
-
-                ps.setInt(1, subjectId);
-                ps.setInt(2, studentId);
-
-            } else {
-                // 🔹 Topic progress
-                ps = con.prepareStatement(
-                        "SELECT score FROM performance_log " +
-                                "WHERE topic_id=? AND student_id=? " +
-                                "ORDER BY recorded_at ASC"
-                );
-
-                ps.setInt(1, topicId);
-                ps.setInt(2, studentId);
-            }
+            ps.setInt(1, topicId);
+            ps.setInt(2, studentId);
 
             ResultSet rs = ps.executeQuery();
 
             int attempt = 1;
 
-            while (rs.next()) {
-                int score = rs.getInt("score");
-                series.getData().add(new XYChart.Data<>(attempt++, score));
+            if (rs.next()) {
+
+                int prev = rs.getInt("previous_score");
+                int curr = rs.getInt("current_score");
+
+                if (!rs.wasNull()) {
+                    series.getData().add(new XYChart.Data<>(attempt++, prev));
+                }
+
+                series.getData().add(new XYChart.Data<>(attempt, curr));
             }
 
         } catch (Exception e) {
@@ -612,7 +491,7 @@ public class RevisionPlanner {
         VBox layout = new VBox(lineChart);
         layout.setPadding(new Insets(20));
 
-        Scene scene = new Scene(layout, 700, 450);
+        Scene scene = new Scene(layout, 600, 400);
         stage.setScene(scene);
         stage.show();
     }
