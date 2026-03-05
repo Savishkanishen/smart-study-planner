@@ -1,10 +1,20 @@
 package com.studyplanner.smartstudyplannerfx;
 
-import java.sql.*;
-import java.util.*;
-import javafx.scene.layout.*;
-import javafx.scene.control.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -14,7 +24,7 @@ public class StudyGraph {
     private Map<Integer, String> subjectNames = new HashMap<>();
 
     public void loadSubjects() throws Exception {
-        Connection con = DBConnection.getConnection();
+        Connection con = SQLiteConnection.getConnection();
         Statement st = con.createStatement();
         ResultSet rs = st.executeQuery("SELECT * FROM subjects");
         while(rs.next()){

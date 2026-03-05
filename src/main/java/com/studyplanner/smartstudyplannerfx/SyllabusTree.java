@@ -1,11 +1,28 @@
 package com.studyplanner.smartstudyplannerfx;
 
-import java.sql.*;
-import java.util.*;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -23,7 +40,7 @@ public class SyllabusTree {
     private SyllabusNode root = new SyllabusNode(0,"Root");
 
     public void loadSyllabus() throws Exception {
-        Connection con = DBConnection.getConnection();
+       Connection con = SQLiteConnection.getConnection();
         Statement st = con.createStatement();
         ResultSet rs = st.executeQuery("SELECT * FROM syllabus");
         while(rs.next()){
@@ -104,7 +121,7 @@ public class SyllabusTree {
     
     // Load existing topics for this subject as potential parents
     try {
-        Connection con = DBConnection.getConnection();
+       Connection con = SQLiteConnection.getConnection();
         PreparedStatement ps = con.prepareStatement(
             "SELECT topic_id, topic_name FROM syllabus WHERE subject_id=? AND parent_topic_id=0"
         );
@@ -140,7 +157,7 @@ public class SyllabusTree {
             }
             
             try {
-                Connection con = DBConnection.getConnection();
+                Connection con = SQLiteConnection.getConnection();
                 int parentId = 0; // 0 means root level (no parent)
                 
                 // If parent selected, get its ID
@@ -186,7 +203,7 @@ private void refreshSyllabusView(int subjectId, String subjectName, VBox content
     contentArea.getChildren().clear();
     
     try {
-        Connection con = DBConnection.getConnection();
+        Connection con = SQLiteConnection.getConnection();
         
         Label subjTitle = new Label("📖 " + subjectName);
         subjTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
