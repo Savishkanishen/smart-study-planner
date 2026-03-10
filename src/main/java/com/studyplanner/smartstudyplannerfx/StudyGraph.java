@@ -84,15 +84,6 @@ public class StudyGraph {
         return container;
     }
 
-    
-    
-    //add own data 
-    
-    
-    
-    
-    
-    
     private void dfs(int id, Set<Integer> visited, List<String> path){
         if(visited.contains(id)) return;
         visited.add(id);

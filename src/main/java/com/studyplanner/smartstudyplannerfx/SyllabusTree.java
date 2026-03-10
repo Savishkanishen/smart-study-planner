@@ -98,7 +98,7 @@ public class SyllabusTree {
     }
     
     
-    //select and view our data 
+    
     
     
     private void showAddTopicDialog(int subjectId, String subjectName, VBox parentContainer) {
@@ -119,7 +119,7 @@ public class SyllabusTree {
     parentCombo.setPromptText("Parent Topic (optional - for sub-topics)");
     parentCombo.setMaxWidth(Double.MAX_VALUE);
     
-    // Load existing topics for this subject as potential parents
+    // potential parents
     try {
        Connection con = SQLiteConnection.getConnection();
         PreparedStatement ps = con.prepareStatement(
@@ -145,7 +145,7 @@ public class SyllabusTree {
     
     dialog.getDialogPane().setContent(form);
     
-    // Handle add button
+    
     dialog.setResultConverter(btn -> {
         if(btn == addBtn) {
             String topicName = topicField.getText().trim();
@@ -158,7 +158,7 @@ public class SyllabusTree {
             
             try {
                 Connection con = SQLiteConnection.getConnection();
-                int parentId = 0; // 0 means root level (no parent)
+                int parentId = 0; 
                 
                 // If parent selected, get its ID
                 if(parentName != null && !parentName.isEmpty()) {
@@ -173,7 +173,7 @@ public class SyllabusTree {
                     }
                 }
                 
-                // Insert new topic
+                //topic
                 PreparedStatement ps = con.prepareStatement(
                     "INSERT INTO syllabus(subject_id, parent_topic_id, topic_name) VALUES(?,?,?)",
                     Statement.RETURN_GENERATED_KEYS
@@ -185,7 +185,7 @@ public class SyllabusTree {
                 
                 showAlert("Added topic: " + topicName);
                 
-                // Refresh the syllabus view
+                
                 refreshSyllabusView(subjectId, subjectName, parentContainer);
                 
             } catch (Exception ex) {
@@ -198,7 +198,7 @@ public class SyllabusTree {
     dialog.showAndWait();
 }
 
-// Helper method to refresh the syllabus view after adding
+
 private void refreshSyllabusView(int subjectId, String subjectName, VBox contentArea) {
     contentArea.getChildren().clear();
     
@@ -219,7 +219,8 @@ private void refreshSyllabusView(int subjectId, String subjectName, VBox content
         
         contentArea.getChildren().add(header);
         
-        // Rebuild tree
+        
+
         TreeView<String> treeView = new TreeView<>();
         TreeItem<String> rootItem = new TreeItem<>("Topics");
         rootItem.setExpanded(true);
@@ -247,7 +248,8 @@ private void refreshSyllabusView(int subjectId, String subjectName, VBox content
             }
         }
         
-        // Build hierarchy
+        
+        
         for(Integer[] rel : relations) {
             TreeItem<String> child = itemMap.get(rel[0]);
             TreeItem<String> parent = itemMap.get(rel[1]);

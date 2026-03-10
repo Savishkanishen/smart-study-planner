@@ -76,8 +76,6 @@ public class StudyToolApp extends Application {
     private static final String DARK_BG = "#0f172a";
 
     
-    
-    // Helper method to keep window ratios perfect
     private void switchScene(Region newRoot) {
         if (primaryStage.getScene() == null) {
             Scene scene = new Scene(newRoot, 1024, 700);
@@ -95,7 +93,7 @@ public class StudyToolApp extends Application {
     public void start(Stage primaryStage) {
         System.out.println("Starting application...");
         
-        // Initialize SQLite Database
+      
         SQLiteConnection.initialize();
         
         this.primaryStage = primaryStage;
@@ -107,7 +105,7 @@ public class StudyToolApp extends Application {
         primaryStage.toFront();
         primaryStage.requestFocus();
         
-        // Safely close connection on exit
+        
         primaryStage.setOnCloseRequest(e -> SQLiteConnection.shutdown());
     }
 
@@ -274,7 +272,7 @@ public class StudyToolApp extends Application {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #e0d2c5;");
 
-        // --- Sidebar Configuration ---
+      
         VBox sidebar = new VBox(10);
         sidebar.setPadding(new Insets(25, 15, 25, 15));
         sidebar.setPrefWidth(260);
@@ -286,7 +284,7 @@ public class StudyToolApp extends Application {
         userLbl.setTextFill(Color.WHITE);
         userLbl.setWrapText(true);
 
-        // Navigation Buttons with Tooltips
+        
         Button quickAddBtn = createNavButton("➕ Add Score", "Record your topic test results");
         Button studyPathBtn = createNavButton("📚 Study Path", "Manage your subjects and prerequisites");
         Button syllabusBtn = createNavButton("🌳 Syllabus", "Organize chapters and topics");
@@ -326,7 +324,7 @@ public class StudyToolApp extends Application {
         welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12;");
         BorderPane.setMargin(welcome, new Insets(40));
 
-        // Logic for Dynamic Greeting
+        
         int hour = java.time.LocalTime.now().getHour();
         String greeting = (hour < 12) ? "Good Morning" : (hour < 17) ? "Good Afternoon" : "Good Evening";
         String timeEmoji = (hour < 12) ? "🌅" : (hour < 17) ? "☀️" : "🌙";
@@ -356,7 +354,7 @@ public class StudyToolApp extends Application {
         btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-text-fill: white; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
         btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #cbd5e1; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 8; -fx-cursor: hand;"));
 
-        // ADDED: Tooltip for UX marks
+        
         Tooltip tooltip = new Tooltip(tooltipText);
         tooltip.setShowDelay(Duration.millis(300));
         btn.setTooltip(tooltip);

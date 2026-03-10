@@ -59,7 +59,7 @@ public class RevisionPlanner {
         weakTopics.clear();
         Connection con = SQLiteConnection.getConnection();
 
-        // Load topic scores with subject info for display
+        
         PreparedStatement ps = con.prepareStatement(
                 "SELECT p.topic_id, s.topic_name, p.score, p.subject_id, sub.subject_name as subject_name " +
                         "FROM performance p " +
@@ -76,7 +76,7 @@ public class RevisionPlanner {
             int score = rs.getInt("score");
             String subjectName = rs.getString("subject_name");
 
-            // LOGIC FIX: Check if this is an "Entire Subject" dummy topic
+            
             if(topicName.equals(subjectName)) {
                 topicName = "📚 " + subjectName + " (Full Syllabus)";
             }
@@ -137,7 +137,7 @@ public class RevisionPlanner {
         title.setFont(Font.font("System", FontWeight.BOLD, 28));
         title.setTextFill(Color.web("#0f172a"));
 
-        // Stats cards
+       
         HBox statsBox = new HBox(20);
         statsBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -154,7 +154,7 @@ public class RevisionPlanner {
 
         statsBox.getChildren().addAll(weakCard, avgCard, totalCard);
 
-        // ScrollPane for the list to handle many items
+       
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: transparent; -fx-border-color: transparent;");
@@ -181,7 +181,7 @@ public class RevisionPlanner {
 
         scrollPane.setContent(listBox);
 
-        // Buttons Bottom Box
+        
         HBox actionBox = new HBox(15);
         actionBox.setAlignment(Pos.CENTER_RIGHT);
 
@@ -202,7 +202,7 @@ public class RevisionPlanner {
         return container;
     }
 
-    // Helper to create each row with delete button
+    
     private HBox createTopicRow(Topic t, int studentId, Runnable refreshCallback) {
         HBox topicRow = new HBox(15);
         topicRow.setAlignment(Pos.CENTER_LEFT);
@@ -224,7 +224,7 @@ public class RevisionPlanner {
         bar.setPrefWidth(150);
         bar.setStyle("-fx-accent: " + scoreColor + ";");
 
-        // Delete button for this specific entry
+        
         Button deleteBtn = new Button("Delete");
         deleteBtn.setStyle("-fx-background-color: #fef2f2; -fx-text-fill: #ef4444; -fx-border-color: #fecaca; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;");
         deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-border-color: #ef4444; -fx-border-radius: 5; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-weight: bold;"));
@@ -278,7 +278,7 @@ public class RevisionPlanner {
         return topicRow;
     }
 
-    // Delete single entry with real-time refresh
+   
     private void deleteSingleEntry(int studentId, int topicId, String displayName, Runnable refreshCallback) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Delete Score");
@@ -290,7 +290,7 @@ public class RevisionPlanner {
                 try {
                     Connection con = SQLiteConnection.getConnection();
 
-                    // LOGIC FIX: Check if it's an "Entire Subject" dummy topic
+                    
                     PreparedStatement checkPs = con.prepareStatement(
                             "SELECT s.topic_name, sub.subject_name FROM performance p " +
                                     "JOIN syllabus s ON p.topic_id = s.topic_id " +
@@ -304,24 +304,24 @@ public class RevisionPlanner {
                         isOverallScore = rs.getString("topic_name").equals(rs.getString("subject_name"));
                     }
 
-                    // Delete performance record
+                    
                     PreparedStatement ps = con.prepareStatement("DELETE FROM performance WHERE student_id=? AND topic_id=?");
                     ps.setInt(1, studentId);
                     ps.setInt(2, topicId);
                     int deleted = ps.executeUpdate();
 
                     if(deleted > 0) {
-                        // If it was an overall score dummy topic, delete it from syllabus too
+                        
                         if(isOverallScore) {
                             ps = con.prepareStatement("DELETE FROM syllabus WHERE topic_id=?");
                             ps.setInt(1, topicId);
                             ps.executeUpdate();
                         }
 
-                        // RELOAD DATA
+                       
                         loadPerformance(studentId);
 
-                        // REAL-TIME REFRESH - Call the callback to update UI
+                       
                         if(refreshCallback != null) {
                             refreshCallback.run();
                         }
@@ -351,7 +351,7 @@ public class RevisionPlanner {
                 try {
                     Connection con = SQLiteConnection.getConnection();
 
-                    // LOGIC FIX: Get all dummy topic IDs first using the proper name matching
+                    
                     PreparedStatement ps = con.prepareStatement(
                             "SELECT p.topic_id FROM performance p " +
                                     "JOIN syllabus s ON p.topic_id = s.topic_id " +
@@ -366,22 +366,21 @@ public class RevisionPlanner {
                         dummyTopicIds.add(rs.getInt("topic_id"));
                     }
 
-                    // Delete all performance records
                     ps = con.prepareStatement("DELETE FROM performance WHERE student_id=?");
                     ps.setInt(1, studentId);
                     ps.executeUpdate();
 
-                    // Clean up dummy topics
+                    
                     for(int id : dummyTopicIds) {
                         ps = con.prepareStatement("DELETE FROM syllabus WHERE topic_id=?");
                         ps.setInt(1, id);
                         ps.executeUpdate();
                     }
 
-                    // RELOAD DATA
+                    
                     loadPerformance(studentId);
 
-                    // REAL-TIME REFRESH
+                   
                     if(refreshCallback != null) {
                         refreshCallback.run();
                     }
@@ -545,7 +544,7 @@ public class RevisionPlanner {
                 ps.setInt(2, studentId);
 
             } else {
-                // 🔹 Topic progress
+                
                 ps = con.prepareStatement(
                         "SELECT score FROM performance_log " +
                                 "WHERE topic_id=? AND student_id=? " +
