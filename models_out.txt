@@ -1,0 +1,24 @@
+Compiled from "Models.java"
+public final class com.google.genai.Models {
+  public com.google.genai.Models(com.google.genai.ApiClient);
+  public com.google.genai.types.Model get(java.lang.String, com.google.genai.types.GetModelConfig);
+  public com.google.genai.types.Model update(java.lang.String, com.google.genai.types.UpdateModelConfig);
+  public com.google.genai.types.DeleteModelResponse delete(java.lang.String, com.google.genai.types.DeleteModelConfig);
+  public com.google.genai.types.CountTokensResponse countTokens(java.lang.String, java.util.List<com.google.genai.types.Content>, com.google.genai.types.CountTokensConfig);
+  public com.google.genai.types.ComputeTokensResponse computeTokens(java.lang.String, java.util.List<com.google.genai.types.Content>, com.google.genai.types.ComputeTokensConfig);
+  public com.google.genai.types.GenerateVideosOperation generateVideos(java.lang.String, java.lang.String, com.google.genai.types.Image, com.google.genai.types.GenerateVideosConfig);
+  public com.google.genai.types.GenerateContentResponse generateContent(java.lang.String, java.util.List<com.google.genai.types.Content>, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.types.GenerateContentResponse generateContent(java.lang.String, com.google.genai.types.Content, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.types.GenerateContentResponse generateContent(java.lang.String, java.lang.String, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.ResponseStream<com.google.genai.types.GenerateContentResponse> generateContentStream(java.lang.String, java.util.List<com.google.genai.types.Content>, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.ResponseStream<com.google.genai.types.GenerateContentResponse> generateContentStream(java.lang.String, com.google.genai.types.Content, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.ResponseStream<com.google.genai.types.GenerateContentResponse> generateContentStream(java.lang.String, java.lang.String, com.google.genai.types.GenerateContentConfig);
+  public com.google.genai.types.CountTokensResponse countTokens(java.lang.String, java.lang.String, com.google.genai.types.CountTokensConfig);
+  public com.google.genai.types.ComputeTokensResponse computeTokens(java.lang.String, java.lang.String, com.google.genai.types.ComputeTokensConfig);
+  public com.google.genai.types.GenerateImagesResponse generateImages(java.lang.String, java.lang.String, com.google.genai.types.GenerateImagesConfig);
+  public com.google.genai.types.EditImageResponse editImage(java.lang.String, java.lang.String, java.util.List<com.google.genai.types.ReferenceImage>, com.google.genai.types.EditImageConfig);
+  public com.google.genai.types.UpscaleImageResponse upscaleImage(java.lang.String, com.google.genai.types.Image, java.lang.String, com.google.genai.types.UpscaleImageConfig);
+  public com.google.genai.types.EmbedContentResponse embedContent(java.lang.String, java.lang.String, com.google.genai.types.EmbedContentConfig);
+  public com.google.genai.types.EmbedContentResponse embedContent(java.lang.String, java.util.List<java.lang.String>, com.google.genai.types.EmbedContentConfig);
+  public com.google.genai.Pager<com.google.genai.types.Model> list(com.google.genai.types.ListModelsConfig);
+}

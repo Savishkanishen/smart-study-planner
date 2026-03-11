@@ -1,0 +1,9 @@
+{
+    "type": "java",
+    "name": "Launch StudyToolApp",
+    "request": "launch",
+    "mainClass": "com.studyplanner.smartstudyplannerfx.StudyToolApp",
+    "env": {
+        "GEMINI_API_KEY": "AIzaSyAIz6jUROdQgvY8BmSCDHPmnQtOrhTOv3E"
+    }
+}

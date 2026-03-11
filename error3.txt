@@ -1,0 +1,54 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------< com.studyplanner:SmartStudyPlannerFX >----------------
+[INFO] Building SmartStudyPlannerFX 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] 6 problems were encountered while building the effective model for org.openjfx:javafx-controls:jar:21 during dependency collection step for project (use -X to see details)
+[WARNING] 6 problems were encountered while building the effective model for org.openjfx:javafx-web:jar:17.0.2 during dependency collection step for project (use -X to see details)
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ SmartStudyPlannerFX ---
+[INFO] Deleting C:\Users\savis\OneDrive\Desktop\SmartStudyPlannerFX\target
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ SmartStudyPlannerFX ---
+[INFO] skip non existing resourceDirectory C:\Users\savis\OneDrive\Desktop\SmartStudyPlannerFX\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ SmartStudyPlannerFX ---
+[WARNING] **********************************************************************************************************************************************
+[WARNING] * Required filename-based automodules detected: [google-genai-1.0.0.jar]. Please don't publish this project to a public artifact repository! *
+[WARNING] **********************************************************************************************************************************************
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 10 source files with javac [debug release 21 module-path] to target\classes
+[INFO] Annotation processing is enabled because one or more processors were found
+  on the class path. A future release of javac may disable annotation processing
+  unless at least one processor is specified by name (-processor), or a search
+  path is specified (--processor-path, --processor-module-path), or annotation
+  processing is enabled explicitly (-proc:only, -proc:full).
+  Use -Xlint:-options to suppress this message.
+  Use -proc:none to disable annotation processing.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/savis/OneDrive/Desktop/SmartStudyPlannerFX/src/main/java/com/studyplanner/smartstudyplannerfx/StudyToolApp.java:[14,24] cannot find symbol
+  symbol:   class GeminiService
+  location: package com.studyplanner
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.582 s
+[INFO] Finished at: 2026-03-11T12:03:23+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project SmartStudyPlannerFX: Compilation failure
+[ERROR] /C:/Users/savis/OneDrive/Desktop/SmartStudyPlannerFX/src/main/java/com/studyplanner/smartstudyplannerfx/StudyToolApp.java:[14,24] cannot find symbol
+[ERROR]   symbol:   class GeminiService
+[ERROR]   location: package com.studyplanner
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

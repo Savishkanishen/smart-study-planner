@@ -1,0 +1,4 @@
+--patch-module
+com.studyplanner.smartstudyplannerfx=_
+--add-reads
+com.studyplanner.smartstudyplannerfx=ALL-UNNAMED

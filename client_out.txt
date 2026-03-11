@@ -1,0 +1,17 @@
+Compiled from "Client.java"
+public final class com.google.genai.Client implements java.lang.AutoCloseable {
+  public final com.google.genai.Models models;
+  public final com.google.genai.Caches caches;
+  public final com.google.genai.Operations operations;
+  public final com.google.genai.Chats chats;
+  public final com.google.genai.Files files;
+  public final com.google.genai.Client$Async async;
+  public static com.google.genai.Client$Builder builder();
+  public com.google.genai.Client();
+  public boolean vertexAI();
+  public java.lang.String project();
+  public java.lang.String location();
+  public java.lang.String apiKey();
+  public void close();
+  public static void setDefaultBaseUrls(java.util.Optional<java.lang.String>, java.util.Optional<java.lang.String>);
+}

@@ -14,6 +14,7 @@ import java.util.Map;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -21,6 +22,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Dialog;
@@ -47,6 +49,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -264,86 +267,111 @@ public class StudyToolApp extends Application {
         }
     }
 
-    private void showDashboard() {
-        if(analysisStage != null && analysisStage.isShowing()) {
-            analysisStage.close();
+private void showDashboard() {
+    if(analysisStage != null && analysisStage.isShowing()) {
+        analysisStage.close();
+    }
+
+    BorderPane root = new BorderPane();
+    root.setStyle("-fx-background-color: #e0d2c5;");
+
+    VBox sidebar = new VBox(10);
+    sidebar.setPadding(new Insets(25, 15, 25, 15));
+    sidebar.setPrefWidth(260);
+    sidebar.setStyle("-fx-background-color: #1e293b; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 2, 0);");
+
+    Label userLbl = new Label("👤 " + currentStudent.getName());
+    userLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
+    userLbl.setTextFill(Color.WHITE);
+    userLbl.setWrapText(true);
+
+    // --- BUTTON DEFINITIONS ---
+    Button quickAddBtn = createNavButton("➕ Add Score", "Record your topic test results");
+    Button studyPathBtn = createNavButton("📚 Study Path", "Manage your subjects and prerequisites");
+    Button syllabusBtn = createNavButton("🌳 Syllabus", "Organize chapters and topics");
+    Button revisionBtn = createNavButton("🔥 Revision Plan", "Identify and focus on weak topics");
+    Button studyPlanBtn = createNavButton("📋 Study Plan", "Generate your personalized schedule");
+    Button aiBtn = createNavButton("🤖 AI Study Guide", "Generate AI notes and papers"); // <--- Defined
+    Button logoutBtn = createNavButton("🚪 Logout", "Safely exit the application");
+
+    // --- BUTTON ACTIONS ---
+    quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
+    studyPathBtn.setOnAction(e -> showAddMySubjectDialog());
+    syllabusBtn.setOnAction(e -> showMySyllabusSelector());
+    studyPlanBtn.setOnAction(e -> generateStudyPlan());
+    
+    // AI Action
+    aiBtn.setOnAction(e -> {
+        ChoiceDialog<String> dialog = new ChoiceDialog<>();
+        dialog.setTitle("AI Study Assistant");
+        dialog.setHeaderText("Generate Personal Study Guide");
+        dialog.setContentText("Choose a subject:");
+        
+        try (Connection con = SQLiteConnection.getConnection()) {
+            ResultSet rs = con.createStatement().executeQuery("SELECT subject_name FROM subjects");
+            while(rs.next()) dialog.getItems().add(rs.getString("subject_name"));
+        } catch (Exception ex) { 
+            showAlert("Error loading subjects.");
         }
 
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #e0d2c5;");
-
-      
-        VBox sidebar = new VBox(10);
-        sidebar.setPadding(new Insets(25, 15, 25, 15));
-        sidebar.setPrefWidth(260);
-        sidebar.setStyle("-fx-background-color: #1e293b; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 2, 0);");
-        sidebar.getChildren().clear();
-
-        Label userLbl = new Label("👤 " + currentStudent.getName());
-        userLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
-        userLbl.setTextFill(Color.WHITE);
-        userLbl.setWrapText(true);
-
-        
-        Button quickAddBtn = createNavButton("➕ Add Score", "Record your topic test results");
-        Button studyPathBtn = createNavButton("📚 Study Path", "Manage your subjects and prerequisites");
-        Button syllabusBtn = createNavButton("🌳 Syllabus", "Organize chapters and topics");
-        Button revisionBtn = createNavButton("🔥 Revision Plan", "Identify and focus on weak topics");
-        Button studyPlanBtn = createNavButton("📋 Study Plan", "Generate your personalized schedule");
-        Button logoutBtn = createNavButton("🚪 Logout", "Safely exit the application");
-
-        quickAddBtn.setOnAction(e -> showAddPerformanceDialog());
-        studyPathBtn.setOnAction(e -> showAddMySubjectDialog());
-        syllabusBtn.setOnAction(e -> showMySyllabusSelector());
-        studyPlanBtn.setOnAction(e -> generateStudyPlan());
-
-        revisionBtn.setOnAction(e -> {
-            try {
-                planner.loadPerformance(currentStudent.getId());
-                root.setCenter(planner.getRevisionView(currentStudent.getId(), this::showDashboard));
-            } catch (Exception ex) {
-                showAlert("Error: " + ex.getMessage());
-            }
+        dialog.showAndWait().ifPresent(subject -> {
+            double currentScore = 0;
+            try (Connection con = SQLiteConnection.getConnection()) {
+                PreparedStatement ps = con.prepareStatement(
+                    "SELECT AVG(score) FROM performance p JOIN subjects s ON p.subject_id = s.subject_id WHERE s.subject_name = ?");
+                ps.setString(1, subject);
+                ResultSet rs = ps.executeQuery();
+                if(rs.next()) currentScore = rs.getDouble(1);
+            } catch (Exception ex) { ex.printStackTrace(); }
+            
+            generateAIStudyPackage(subject, currentScore);
         });
+    });
 
-        logoutBtn.setOnAction(e -> {
-            currentStudent = null;
-            showLoginScreen();
-        });
+    revisionBtn.setOnAction(e -> {
+        try {
+            planner.loadPerformance(currentStudent.getId());
+            root.setCenter(planner.getRevisionView(currentStudent.getId(), this::showDashboard));
+        } catch (Exception ex) { showAlert("Error: " + ex.getMessage()); }
+    });
 
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+    logoutBtn.setOnAction(e -> {
+        currentStudent = null;
+        showLoginScreen();
+    });
 
-        sidebar.getChildren().addAll(userLbl, new Region() {{ setPrefHeight(30); }},
-                studyPathBtn, syllabusBtn, quickAddBtn,
-                studyPlanBtn, revisionBtn, spacer, logoutBtn);
+    Region spacer = new Region();
+    VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        // --- Center Content with Dynamic Greeting
-        VBox welcome = new VBox(15);
-        welcome.setAlignment(Pos.CENTER);
-        welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12;");
-        BorderPane.setMargin(welcome, new Insets(40));
+    // --- CRITICAL FIX: ADD TO SIDEBAR ---
+    // You must include aiBtn in this list below:
+    sidebar.getChildren().addAll(
+        userLbl, 
+        new Region() {{ setPrefHeight(30); }},
+        studyPathBtn, 
+        syllabusBtn, 
+        quickAddBtn,
+        studyPlanBtn, 
+        revisionBtn, 
+        aiBtn,      // <--- THIS WAS MISSING
+        spacer, 
+        logoutBtn
+    );
 
-        
-        int hour = java.time.LocalTime.now().getHour();
-        String greeting = (hour < 12) ? "Good Morning" : (hour < 17) ? "Good Afternoon" : "Good Evening";
-        String timeEmoji = (hour < 12) ? "🌅" : (hour < 17) ? "☀️" : "🌙";
+    // Welcome Screen logic...
+    VBox welcome = new VBox(15);
+    welcome.setAlignment(Pos.CENTER);
+    welcome.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #e2e8f0; -fx-border-radius: 12;");
+    BorderPane.setMargin(welcome, new Insets(40));
+    
+    Label welcomeLbl = new Label("Welcome, " + currentStudent.getName() + "!");
+    welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
+    welcome.getChildren().add(welcomeLbl);
 
-        Label welcomeLbl = new Label(greeting + ", " + currentStudent.getName() + "! " + timeEmoji);
-        welcomeLbl.setFont(Font.font("System", FontWeight.BOLD, 32));
-        welcomeLbl.setTextFill(Color.web("#0f172a"));
-
-        Label subLbl = new Label("Select an option from the sidebar to get started");
-        subLbl.setFont(Font.font("System", 16));
-        subLbl.setTextFill(Color.web("#64748b"));
-
-        welcome.getChildren().addAll(welcomeLbl, subLbl);
-
-        root.setLeft(sidebar);
-        root.setCenter(welcome);
-        switchScene(root);
-        primaryStage.toFront();
-    }
+    root.setLeft(sidebar);
+    root.setCenter(welcome);
+    switchScene(root);
+}
 
     private Button createNavButton(String text, String tooltipText) {
         Button btn = new Button(text);
@@ -1312,6 +1340,8 @@ public class StudyToolApp extends Application {
         } catch (Exception ex) { contentArea.getChildren().add(new Label("Error: " + ex.getMessage())); }
     }
 
+    
+
     private void refreshAnalysisContent() {
         if (analysisContentBox == null) return;
         analysisContentBox.getChildren().clear();
@@ -1525,18 +1555,29 @@ public class StudyToolApp extends Application {
         scheduleBox.setPadding(new Insets(15));
         scheduleBox.setStyle("-fx-background-color: " + (isCritical ? "#fef2f2" : "#f8fafc") + "; -fx-background-radius: 8px; -fx-border-color: " + (isCritical ? "#fecaca" : "#e2e8f0") + "; -fx-border-radius: 8px;");
 
-        if (isCritical) {
-            Label alertLbl = new Label("⚠️ NEEDS IMMEDIATE ATTENTION");
-            alertLbl.setFont(Font.font("System", FontWeight.BOLD, 13));
-            alertLbl.setTextFill(Color.web("#b91c1c"));
-            scheduleBox.getChildren().add(alertLbl);
-        }
+        Label scheduleHeader = new Label("📅 Recommended Methodology:");
+    scheduleHeader.setFont(Font.font("System", FontWeight.BOLD, 14));
 
-        Label scheduleHeader = new Label("📅 Study Schedule:");
-        scheduleHeader.setFont(Font.font("System", FontWeight.BOLD, 14));
-        scheduleHeader.setTextFill(Color.web("#1e293b"));
+    VBox timeTable = new VBox(5);
+    String theory, revision, papers;
 
-        VBox timeTable = new VBox(5);
+        if (avgScore < 40) {
+        theory = "60 mins (Heavy Focus)"; revision = "30 mins"; papers = "15 mins";
+    } else if (avgScore < 60) {
+        theory = "30 mins"; revision = "30 mins"; papers = "30 mins (Equal Split)";
+    } else {
+        theory = "15 mins"; revision = "20 mins"; papers = "45 mins (Exam Drill)";
+    }
+
+    timeTable.getChildren().addAll(
+        new Label("• 📖 Theory: " + theory),
+        new Label("• 🔄 Revision: " + revision),
+        new Label("• 📝 Papers: " + papers)
+    );
+
+
+     
+        
         String[] items = isCritical ?
                 new String[]{"• Day 1-2: Concept review (3 hrs)", "• Target: Reach 50% in 5 days"} :
                 new String[]{"• Day 1: Weak topic review (1.5 hrs)", "• Target: Reach 70% in 3 days"};
@@ -1604,6 +1645,80 @@ public class StudyToolApp extends Application {
         alert.setContentText(msg);
         alert.showAndWait();
     }
+
+    
+// Method to pull topic names from the database for the prompt
+private String getTopicsForSubject(String subjectName) {
+    StringBuilder topics = new StringBuilder();
+    try (Connection con = SQLiteConnection.getConnection()) {
+        String sql = "SELECT topic_name FROM syllabus s " +
+                     "JOIN subjects sub ON s.subject_id = sub.subject_id " +
+                     "WHERE sub.subject_name = ?";
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setString(1, subjectName);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            topics.append(rs.getString("topic_name")).append(", ");
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return topics.length() > 0 ? topics.toString() : "General syllabus";
+}
+
+
+
+//helper methods
+private void generateAIStudyPackage(String subjectName, double avgScore) {
+    // Get related topics from database to provide context to the AI
+    StringBuilder topics = new StringBuilder();
+    try (Connection con = SQLiteConnection.getConnection()) {
+        PreparedStatement ps = con.prepareStatement("SELECT topic_name FROM syllabus s JOIN subjects sub ON s.subject_id=sub.subject_id WHERE sub.subject_name=?");
+        ps.setString(1, subjectName);
+        ResultSet rs = ps.executeQuery();
+        while(rs.next()) topics.append(rs.getString("topic_name")).append(", ");
+    } catch (Exception e) {}
+
+    // Use a background Task so the UI doesn't freeze
+    Task<String> aiTask = new Task<>() {
+        @Override
+        protected String call() throws Exception {
+            AIService service = new AIService();
+            String rawJson = service.generateStudyMaterial(subjectName, avgScore, topics.toString());
+            System.out.println("RAW RESPONSE: " + rawJson);
+            return service.extractTextFromResponse(rawJson);
+        }
+    };
+
+    aiTask.setOnSucceeded(e -> showAIResultsWindow(subjectName, aiTask.getValue()));
+    aiTask.setOnFailed(e -> showAlert("AI Error: " + aiTask.getException().getMessage()));
+
+    new Thread(aiTask).start();
+}
+
+private void showAIResultsWindow(String subject, String aiContent) {
+    Stage stage = new Stage();
+    stage.setTitle("AI Study Guide: " + subject);
+    WebView webView = new WebView();
+    
+    // Formatting the AI output as HTML for the WebView
+    String html = "<html><body style='font-family:sans-serif; padding:25px; line-height:1.6; color:#1e293b; background-color:#f8fafc;'>" +
+                  "<h1 style='color:#6366f1; border-bottom:2px solid #6366f1;'>AI Study Package: " + subject + "</h1>" +
+                  "<div style='background:white; padding:20px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.05);'>" +
+                  aiContent.replace("\n", "<br>") + 
+                  "</div></body></html>";
+
+    webView.getEngine().loadContent(html);
+    VBox root = new VBox(webView);
+    VBox.setVgrow(webView, Priority.ALWAYS);
+    stage.setScene(new Scene(root, 900, 700));
+    stage.show();
+}
+
+
+
+
+   
 
     public static void main(String[] args) {
         System.out.println("Launching...");

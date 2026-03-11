@@ -434,65 +434,29 @@ public class RevisionPlanner {
             guide.append("Maintain your performance with light revision.\n");
 
         } else {
+        guide.append("🔥 PRIORITY TOPICS & METHODOLOGY\n");
+        guide.append("────────────────────────\n\n");
 
-            guide.append("🔥 PRIORITY TOPICS\n");
-            guide.append("────────────────────────\n\n");
+        for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
+            int score = t.score;
+            int totalTime, theory, revision, papers;
 
-            int totalTime = 0;
-            int rank = 1;
-
-            for(Topic t : weakTopics.stream().limit(5).collect(Collectors.toList())) {
-
-                int score = t.score;
-
-                int time;
-
-                if(score < 40) time = 60;
-                else if(score < 60) time = 40;
-                else if(score < 80) time = 20;
-                else time = 10;
-
-                totalTime += time;
-
-                guide.append(rank).append(". ").append(t.name)
-                        .append(" — ").append(score).append("%")
-                        .append(" (").append(t.trend).append(")\n");
-
-                guide.append("   ⏱ Suggested Study Time: ")
-                        .append(time).append(" minutes\n\n");
-
-                rank++;
+            // Logic for time allocation based on performance
+            if(score < 40) { // Critical: Focus on Theory
+                totalTime = 120; theory = 60; revision = 40; papers = 20;
+            } else if(score < 60) { // Weak: Balanced
+                totalTime = 90;  theory = 30; revision = 30; papers = 30;
+            } else { // Moderate: Focus on Papers
+                totalTime = 60;  theory = 10; revision = 20; papers = 30;
             }
 
-            guide.append("📅 TODAY'S STUDY PLAN\n");
-            guide.append("────────────────────────\n");
-
-            for(Topic t : weakTopics.stream().limit(3).collect(Collectors.toList())) {
-
-                int score = t.score;
-
-                int time;
-
-                if(score < 40) time = 60;
-                else if(score < 60) time = 40;
-                else time = 20;
-
-                guide.append("📘 ")
-                        .append(t.name)
-                        .append(" → ")
-                        .append(time)
-                        .append(" minutes\n");
-            }
-
-            guide.append("\n⏳ TOTAL STUDY TIME TODAY\n");
-            guide.append(totalTime).append(" minutes\n");
-
-            guide.append("\n💡 STUDY TIPS\n");
-            guide.append("• Use active recall for topics below 50%\n");
-            guide.append("• Practice past exam questions\n");
-            guide.append("• Review improving topics briefly\n");
-            guide.append("• Take breaks every 45 minutes\n");
+            guide.append("📘 ").append(t.name).append(" (").append(score).append("%)\n");
+            guide.append("   Total Time: ").append(totalTime).append(" mins\n");
+            guide.append("   - 📖 Theory: ").append(theory).append(" mins\n");
+            guide.append("   - 🔄 Revision: ").append(revision).append(" mins\n");
+            guide.append("   - 📝 Past Papers: ").append(papers).append(" mins\n\n");
         }
+    }
 
         alert.setContentText(guide.toString());
         alert.showAndWait();
@@ -579,4 +543,6 @@ public class RevisionPlanner {
         stage.setScene(scene);
         stage.show();
     }
+
+    
 }

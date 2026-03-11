@@ -1,0 +1,16 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /C:/Users/savis/OneDrive/Desktop/SmartStudyPlannerFX/src/main/java/com/studyplanner/smartstudyplannerfx/GeminiService.java:[22,54] cannot find symbol
+  symbol:   method generateContent(java.lang.String,java.lang.String,<nulltype>)
+  location: variable client of type com.google.genai.Client
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project SmartStudyPlannerFX: Compilation failure
+[ERROR] /C:/Users/savis/OneDrive/Desktop/SmartStudyPlannerFX/src/main/java/com/studyplanner/smartstudyplannerfx/GeminiService.java:[22,54] cannot find symbol
+[ERROR]   symbol:   method generateContent(java.lang.String,java.lang.String,<nulltype>)
+[ERROR]   location: variable client of type com.google.genai.Client
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
